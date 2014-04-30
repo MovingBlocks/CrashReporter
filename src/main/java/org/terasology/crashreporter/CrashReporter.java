@@ -123,8 +123,8 @@ public final class CrashReporter {
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 
         // Replace newline chars. with html newline elements (not needed in most cases)
-        String text = exception.toString().replaceAll("\\r?\\n", "&lt;br/&gt;");
-        JLabel message = new JLabel("&lt;html&gt;&lt;h3&gt;A fatal error occurred&lt;/h3&gt;&lt;br/&gt;" + text + "&lt;/html&gt;");
+        String text = exception.toString().replaceAll("\\r?\\n", "<br/>");
+        JLabel message = new JLabel("<html><h3>A fatal error occurred</h3><br/>" + text + "</html>");
         mainPanel.add(message);
         message.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -286,7 +286,7 @@ public final class CrashReporter {
                         public void run() {
                             closeButton.setEnabled(true);
                             final String url = link.getLink().toString();
-                            label.setText(String.format("&lt;html&gt;Paste uploaded to &lt;a href=\"%s\"&gt;%s&lt;/a&gt;&lt;/html&gt;", url, url));
+                            label.setText(String.format("<html>Paste uploaded to <a href=\"%s\">%s</a></html>", url, url));
                             label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                             label.addMouseListener(new MouseAdapter() {
                                 public void mouseClicked(java.awt.event.MouseEvent e) {
@@ -303,7 +303,7 @@ public final class CrashReporter {
                         @Override
                         public void run() {
                             closeButton.setEnabled(true);
-                            label.setText("&lt;html&gt;Upload failed: &lt;br/&gt; " + e.getLocalizedMessage() + "&lt;/html&gt;");
+                            label.setText("<html>Upload failed: <br/> " + e.getLocalizedMessage() + "</html>");
                         }
                     });
                 }
