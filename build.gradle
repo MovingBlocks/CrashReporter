@@ -21,3 +21,18 @@ dependencies {
 task wrapper(type: Wrapper) {
     gradleVersion = '1.12'
 }
+
+
+task sourceJar(type: Jar) {
+    description = "Create a JAR with all sources"
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    description = "Create a JAR with the JavaDoc for the java sources"
+    from javadoc.destinationDir
+    classifier = 'javadoc'
+}
+
+build.dependsOn sourceJar, javadocJar
