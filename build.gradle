@@ -4,7 +4,7 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 
 group = 'org.terasology'
-version = '1.2'
+version = '1.1'
 
 // We use both Maven Central and our own Artifactory instance, which contains module builds, extra libs, and so on
 repositories {
@@ -40,15 +40,11 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = 'javadoc'
 }
 
+build.dependsOn sourceJar, javadocJar
 
 // Define the artifacts we want to publish (the .pom will also be included since the Maven plugin is active)
 artifacts {
     published jar
     published sourceJar
     published javadocJar
-}
-
-// Technically the plain "jar" both here and above is included automatically, but leaving it explicit for clarity
-artifactoryPublish {
-    dependsOn jar, sourceJar, javadocJar
 }
