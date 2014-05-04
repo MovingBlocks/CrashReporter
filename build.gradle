@@ -3,8 +3,20 @@ apply plugin: 'maven'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
+import java.text.SimpleDateFormat;
+
 group = 'org.terasology'
+
 version = '1.1'
+
+// Mainly useful for local testing against Artifactory to make uniquely timestamped artifacts
+// Check to see if we're running in Jenkins and in that case attach a snapshot+job build number
+if (env.BUILD_NUMBER != null) {
+    version += '-SNAPSHOT+' + env.BUILD_NUMBER
+} else {
+    // Mainly useful for local testing against Artifactory to make uniquely timestamped artifacts
+    version += '-SNAPSHOT+' + new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss").format(new Date())
+}
 
 // We use both Maven Central and our own Artifactory instance, which contains module builds, extra libs, and so on
 repositories {
