@@ -17,7 +17,7 @@ if (env.BUILD_NUMBER != null) {
     version += '-SNAPSHOT+' + env.BUILD_NUMBER
 } else {
     // Mainly useful for local testing against Artifactory to make uniquely timestamped artifacts
-    version += '-SNAPSHOT+' + new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss").format(new Date())
+    version += '-SNAPSHOT'  // +' + new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss").format(new Date())
 }
 
 // We use both Maven Central and our own Artifactory instance, which contains module builds, extra libs, and so on
@@ -54,11 +54,8 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = 'javadoc'
 }
 
-build.dependsOn sourceJar, javadocJar
-
 // Define the artifacts we want to publish (the .pom will also be included since the Maven plugin is active)
 artifacts {
-    published jar
-    published sourceJar
-    published javadocJar
+    archives sourceJar
+    archives javadocJar
 }
