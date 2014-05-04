@@ -28,11 +28,6 @@ repositories {
     }
 }
 
-// A configuration for publishing artifacts
-configurations {
-    published
-}
-
 dependencies {
 	compile group: 'brianbb', name: 'jpastebin', version: '1.0.0'
 }
