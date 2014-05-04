@@ -9,6 +9,8 @@ group = 'org.terasology'
 
 version = '1.1'
 
+def env = System.getenv()
+
 // Mainly useful for local testing against Artifactory to make uniquely timestamped artifacts
 // Check to see if we're running in Jenkins and in that case attach a snapshot+job build number
 if (env.BUILD_NUMBER != null) {
