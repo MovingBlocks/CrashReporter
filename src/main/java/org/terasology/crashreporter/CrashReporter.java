@@ -134,7 +134,7 @@ public final class CrashReporter {
         String stacktrace = sw.toString();
         // do not use exception.getStackTrace(), because it does 
         // not contain suppressed exception or causes
-        
+
         mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
         // Tab pane
