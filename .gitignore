@@ -7,3 +7,6 @@
 .settings/
 /bin
 /build
+
+# Log Output
+details.log

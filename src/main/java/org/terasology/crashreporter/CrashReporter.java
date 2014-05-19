@@ -16,6 +16,7 @@
 
 package org.terasology.crashreporter;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Desktop;
@@ -39,8 +40,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import javax.imageio.ImageIO;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -120,13 +119,12 @@ public final class CrashReporter {
     private static void showModalDialog(Throwable exception, final String logFileContent) {
 
         JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setLayout(new BorderLayout(0, 20));
 
         // Replace newline chars. with html newline elements (not needed in most cases)
         String text = exception.toString().replaceAll("\\r?\\n", "<br/>");
         JLabel message = new JLabel("<html><h3>A fatal error occurred</h3><br/>" + text + "</html>");
-        mainPanel.add(message);
-        message.setAlignmentX(Component.LEFT_ALIGNMENT);
+        mainPanel.add(message, BorderLayout.NORTH);
 
         // convert exception stacktrace to string
         StringWriter sw = new StringWriter();
@@ -135,12 +133,9 @@ public final class CrashReporter {
         // do not use exception.getStackTrace(), because it does 
         // not contain suppressed exception or causes
 
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-
         // Tab pane
+        JPanel centerPanel = new JPanel(new BorderLayout()); 
         final JTabbedPane tabPane = new JTabbedPane();
-        tabPane.setPreferredSize(new Dimension(600, 250));
-        tabPane.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // StackTrace tab 
         JTextArea stackTraceArea = new JTextArea();
@@ -154,12 +149,11 @@ public final class CrashReporter {
         logArea.setText(logFileContent);
         tabPane.addTab("Logfile", new JScrollPane(logArea));
 
-        mainPanel.add(tabPane);
-        mainPanel.add(new JLabel("NOTE: you can edit the content of the log file before uploading"));
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
+        centerPanel.add(tabPane, BorderLayout.CENTER);
+        centerPanel.add(new JLabel("NOTE: you can edit the content of the log file before uploading"), BorderLayout.SOUTH);
 
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         buttonPanel.setLayout(new GridLayout(1, 3, 20, 0));
         final JButton pastebinUpload = new JButton("Upload log file to PasteBin");
         pastebinUpload.setIcon(loadIcon("icons/pastebin.png"));
@@ -221,16 +215,19 @@ public final class CrashReporter {
         });
         buttonPanel.add(enterIrc);
 
-        mainPanel.add(buttonPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         // Custom close button
         JButton closeButton = new JButton("Close", loadIcon("icons/close.png"));
 
-        showDialog(mainPanel, closeButton, "Fatal Error", JOptionPane.ERROR_MESSAGE);
+        JDialog dialog = createDialog(mainPanel, closeButton, "Fatal Error", JOptionPane.ERROR_MESSAGE);
+        dialog.setMinimumSize(new Dimension(450, 350));
+        dialog.setResizable(true);      // disabled by default
+        dialog.setVisible(true);
+        dialog.dispose();
     }
 
-    private static void showDialog(Component mainPanel, JButton closeButton, String title, int messageType) {
+    private static JDialog createDialog(Component mainPanel, JButton closeButton, String title, int messageType) {
         Object[] opts = new Object[]{closeButton};
 
         // The error-message pane
@@ -245,10 +242,8 @@ public final class CrashReporter {
         });
 
         // wrap it all in a dialog
-        JDialog dialog = pane.createDialog(null, title);
-//        dialog.setResizable(true);      // disabled by default
-        dialog.setVisible(true);
-        dialog.dispose();
+        JDialog dialog = pane.createDialog(title);
+        return dialog;
     }
 
     private static Icon loadIcon(String fname) {
@@ -313,7 +308,9 @@ public final class CrashReporter {
         Thread thread = new Thread(runnable, "Upload paste");
         thread.start();
 
-        showDialog(label, closeButton, "Pastebin Upload", JOptionPane.INFORMATION_MESSAGE);
+        JDialog dialog = createDialog(label, closeButton, "Upload to Pastebin", JOptionPane.INFORMATION_MESSAGE);
+        dialog.setVisible(true);
+        dialog.dispose();
     }
 
     private static void openInBrowser(String url) {

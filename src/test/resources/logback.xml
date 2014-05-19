@@ -3,6 +3,7 @@
 
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
         <file>details.log</file>
+        <param name="append" value="false" />
 
         <encoder>
             <pattern>%date %level [%thread] %logger{10} [%file:%line] %msg%n</pattern>
@@ -17,5 +18,6 @@
 
     <root level="TRACE">
         <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
     </root>
 </configuration>

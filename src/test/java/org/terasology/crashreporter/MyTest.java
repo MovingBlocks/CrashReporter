@@ -25,23 +25,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO Type description
+ * An interactive test using Mockito
  * @author Martin Steiger
  */
 public class MyTest {
     
     private static final Logger logger = LoggerFactory.getLogger(MyTest.class);
     
+    /**
+     * @param args (ignored)
+     */
     public static void main(String[] args) {
         MyEngine engine = Mockito.mock(MyEngine.class);
+        Mockito.doThrow(new RuntimeException()).when(engine).run();
         
         logger.info("Important information");
         
-        tryToCatch(engine);
+        setup(engine);
     }
     
     
-    private static void tryToCatch(MyEngine engine) {
+    private static void setup(MyEngine engine) {
         try {
             try {
                 engine.init();
@@ -56,7 +60,7 @@ public class MyTest {
                 }
             }
         } catch (RuntimeException e) {
-
+        	logger.warn("An error occurred", e);
             if (!GraphicsEnvironment.isHeadless()) {
                 Path logPath = Paths.get(".");
                 Path logFile = logPath.resolve("details.log");
