@@ -20,6 +20,7 @@ import java.awt.GraphicsEnvironment;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.junit.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,11 +31,12 @@ import org.slf4j.LoggerFactory;
  * @author Martin Steiger
  */
 @SuppressWarnings("unused")
-public class MyTestCases {
+public class InteractiveTestCases {
 
-    private static final Logger logger = LoggerFactory.getLogger(MyTestCases.class);
+    private static final Logger logger = LoggerFactory.getLogger(InteractiveTestCases.class);
 
-    public static void main(String[] args) throws Exception {
+    @Test
+    public void main() throws Exception {
 
         logger.info("Important information");
 
