@@ -53,7 +53,6 @@ task createVersionInfoFile {
     doLast {
         logger.lifecycle("Creating $versionInfoFile")
 
-        versionInfoFileDir.mkdirs()
         ant.propertyfile(file: versionInfoFile) {
             ant.entry(key: 'buildNumber', value: env.BUILD_NUMBER)
             ant.entry(key: 'buildId', value: env.BUILD_ID)
