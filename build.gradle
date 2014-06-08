@@ -45,7 +45,7 @@ task wrapper(type: Wrapper) {
 
 def convertGitBranch = { gitBranch ->
     // Remove "origin/" from "origin/develop"
-    return gitBranch?.substring{ lastIndexOf("/") + 1 }
+    return gitBranch ? gitBranch.substring(gitBranch.lastIndexOf("/") + 1) : null
 }
 
 task createVersionInfoFile {
