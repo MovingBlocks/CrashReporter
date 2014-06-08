@@ -29,24 +29,20 @@ import org.slf4j.LoggerFactory;
  * A few test cases for manual (not JUnit) inspection
  * @author Martin Steiger
  */
+@SuppressWarnings("unused")
 public class MyTestCases {
 
     private static final Logger logger = LoggerFactory.getLogger(MyTestCases.class);
 
     public static void main(String[] args) throws Exception {
 
-        suppressedException();
-
         logger.info("Important information");
-    }
-
-
-    private static void suppressedException() throws Exception {
 
         try (MyEngine engine = Mockito.mock(MyEngine.class))
         {
-            Mockito.doThrow(new RuntimeException("In run()")).when(engine).run();
-            Mockito.doThrow(new RuntimeException("In dispose()")).when(engine).close();
+//            setupForSingleException(engine);
+//            setupForSuppressException(engine);
+            setupForExtraLongMessageException(engine);
 
             engine.init();
             engine.run();
@@ -57,8 +53,28 @@ public class MyTestCases {
             if (!GraphicsEnvironment.isHeadless()) {
                 Path logPath = Paths.get(".");
                 Path logFile = logPath.resolve("details.log");
+//              Path logFile = logPath.resolve("src/test/resources/lengthy_logfile.log");
                 CrashReporter.report(e, logFile);
             }
         }
+    }
+
+
+    private static void setupForExtraLongMessageException(MyEngine engine) throws Exception {
+        String text =
+                "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor " + 
+                "invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam " + 
+                "et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus";
+
+        Mockito.doThrow(new RuntimeException(text)).when(engine).run();
+    }
+
+    private static void setupForSingleException(MyEngine engine) throws Exception {
+        Mockito.doThrow(new RuntimeException("In run()")).when(engine).run();
+    }
+
+    private static void setupForSuppressException(MyEngine engine) throws Exception {
+        Mockito.doThrow(new RuntimeException("In run()")).when(engine).run();
+        Mockito.doThrow(new RuntimeException("AND in dispose()")).when(engine).close();
     }
 }

@@ -124,6 +124,8 @@ public final class CrashReporter {
         // Replace newline chars. with html newline elements (not needed in most cases)
         String text = exception.toString().replaceAll("\\r?\\n", "<br/>");
         JLabel message = new JLabel("<html><h3>A fatal error occurred</h3><br/>" + text + "</html>");
+        mainPanel.setPreferredSize(new Dimension(750, 450));
+
         mainPanel.add(message, BorderLayout.NORTH);
 
         // convert exception stacktrace to string
