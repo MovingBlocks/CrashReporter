@@ -10,14 +10,15 @@ group = 'org.terasology'
 version = '1.1'
 
 def env = System.getenv()
-
+def versionInfoFile = new File(sourceSets.main.output.resourcesDir, 'versionInfo.properties')
+	
 // Mainly useful for local testing against Artifactory to make uniquely timestamped artifacts
 // Check to see if we're running in Jenkins and in that case attach a snapshot+job build number
 if (env.BUILD_NUMBER != null) {
     version += '-SNAPSHOT+' + env.BUILD_NUMBER
 } else {
     // Mainly useful for local testing against Artifactory to make uniquely timestamped artifacts
-    version += '-SNAPSHOT'  // +' + new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss").format(new Date())
+    version += '-SNAPSHOT'  // + startDateTimeString
 }
 
 // We use both Maven Central and our own Artifactory instance, which contains module builds, extra libs, and so on
@@ -41,6 +42,32 @@ dependencies {
 task wrapper(type: Wrapper) {
     gradleVersion = '1.12'
 }
+
+def convertGitBranch = { gitBranch ->
+    // Remove "origin/" from "origin/develop"
+    return gitBranch?.substring{ lastIndexOf("/") + 1 }
+}
+
+task createVersionInfoFile {
+
+    doLast {
+        logger.lifecycle("Creating $versionInfoFile")
+
+        versionInfoFileDir.mkdirs()
+        ant.propertyfile(file: versionInfoFile) {
+            ant.entry(key: 'buildNumber', value: env.BUILD_NUMBER)
+            ant.entry(key: 'buildId', value: env.BUILD_ID)
+            ant.entry(key: 'buildTag', value: env.BUILD_TAG)
+            ant.entry(key: 'buildUrl', value: env.BUILD_URL)
+            ant.entry(key: 'jobName', value: env.JOB_NAME)
+            ant.entry(key: 'gitBranch', value: convertGitBranch(env.GIT_BRANCH))
+            ant.entry(key: 'gitCommit', value: env.GIT_COMMIT)
+            ant.entry(key: 'displayVersion', value: version)
+        }
+    }
+}
+
+jar.dependsOn createVersionInfoFile
 
 
 task sourceJar(type: Jar) {

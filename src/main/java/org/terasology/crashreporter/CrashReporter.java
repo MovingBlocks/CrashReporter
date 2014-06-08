@@ -28,6 +28,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.image.BufferedImage;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
@@ -38,6 +39,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Properties;
 
 import javax.imageio.ImageIO;
 import javax.swing.Icon;
@@ -113,6 +115,26 @@ public final class CrashReporter {
             });
         } catch (InvocationTargetException | InterruptedException e) {
             e.printStackTrace(System.err);
+        }
+    }
+
+    private static String getVersionInfo()
+    {
+        String fname = "versionInfo.properties";
+        URL location = CrashReporter.class.getResource(fname);
+
+        if (location == null)
+            return "";
+
+        try (InputStream is = location.openStream())
+        {
+            Properties props = new Properties();
+            props.load(is);
+            return props.getProperty("displayVersion", "");
+        } catch (IOException e) {
+            System.err.println("Error reading version info " + fname);
+            e.printStackTrace();
+            return "";
         }
     }
 
@@ -223,7 +245,13 @@ public final class CrashReporter {
         // Custom close button
         JButton closeButton = new JButton(I18N.getMessage("close"), loadIcon("icons/close.png"));
 
-        JDialog dialog = createDialog(mainPanel, closeButton, I18N.getMessage("dialogTitle"), JOptionPane.ERROR_MESSAGE);
+        String dialogTitle = I18N.getMessage("dialogTitle");
+        String version = getVersionInfo();
+
+        if (version != null)
+            dialogTitle += " " + version;
+
+        JDialog dialog = createDialog(mainPanel, closeButton, dialogTitle, JOptionPane.ERROR_MESSAGE);
         dialog.setMinimumSize(new Dimension(450, 350));
         dialog.setResizable(true);      // disabled by default
         dialog.setVisible(true);
