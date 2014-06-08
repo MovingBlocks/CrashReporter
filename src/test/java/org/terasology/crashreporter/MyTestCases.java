@@ -26,41 +26,34 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An interactive test using Mockito
+ * A few test cases for manual (not JUnit) inspection
  * @author Martin Steiger
  */
-public class MyTest {
-    
-    private static final Logger logger = LoggerFactory.getLogger(MyTest.class);
-    
-    /**
-     * @param args (ignored)
-     */
-    public static void main(String[] args) {
-        MyEngine engine = Mockito.mock(MyEngine.class);
-        Mockito.doThrow(new RuntimeException()).when(engine).run();
-        
+public class MyTestCases {
+
+    private static final Logger logger = LoggerFactory.getLogger(MyTestCases.class);
+
+    public static void main(String[] args) throws Exception {
+
+        suppressedException();
+
         logger.info("Important information");
-        
-        setup(engine);
     }
-    
-    
-    private static void setup(MyEngine engine) {
-        try {
-            try {
-                engine.init();
-                engine.run();
-            } finally {
-                try {
-                    engine.dispose();
-                } catch (Exception e) {
-                    // Just log this one to System.err because we don't want it 
-                    // to replace the one that came first (thrown above).
-                    e.printStackTrace();
-                }
-            }
-        } catch (RuntimeException e) {
-        	logger.warn("An error occurred", e);
+
+
+    private static void suppressedException() throws Exception {
+
+        try (MyEngine engine = Mockito.mock(MyEngine.class))
+        {
+            Mockito.doThrow(new RuntimeException("In run()")).when(engine).run();
+            Mockito.doThrow(new RuntimeException("In dispose()")).when(engine).close();
+
+            engine.init();
+            engine.run();
+        } 
+        catch (RuntimeException e) {
+            logger.warn("An exception occurred", e);
+
             if (!GraphicsEnvironment.isHeadless()) {
                 Path logPath = Paths.get(".");
                 Path logFile = logPath.resolve("details.log");

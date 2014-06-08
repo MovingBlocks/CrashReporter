@@ -20,11 +20,9 @@ package org.terasology.crashreporter;
  * A simple definition of a game engine
  * @author Martin Steiger
  */
-public interface MyEngine {
+public interface MyEngine extends AutoCloseable {
 
     public void init();
 
     public void run();
-
-    public void dispose();
 }
