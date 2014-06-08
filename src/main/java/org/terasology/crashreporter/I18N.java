@@ -21,16 +21,11 @@ import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Internationalization support
  * @author Martin Steiger
  */
 public final class I18N {
-
-    private static final Logger logger = LoggerFactory.getLogger(I18N.class);
 
     private static final String MESSAGE_BUNDLE = "i18n.MessagesBundle";
 
@@ -42,7 +37,7 @@ public final class I18N {
         try {
             return ResourceBundle.getBundle(MESSAGE_BUNDLE, locale).getString(key);
         } catch (MissingResourceException e) {
-            logger.warn("Missing message translation! key={}, locale={}", key, locale);
+            System.err.println("Missing message translation! key=" + key + ", locale=" + locale);
             return "$" + key + "$";
         }
     }
@@ -55,7 +50,7 @@ public final class I18N {
             final MessageFormat messageFormat = new MessageFormat(pattern, locale);
             return messageFormat.format(arguments, new StringBuffer(), null).toString();
         } catch (MissingResourceException e) {
-            logger.warn("Missing message translation! key={}, locale={}", key, locale);
+            System.err.println("Missing message translation! key=" + key + ", locale=" + locale);
             return "$" + key + "$";
         }
     }
