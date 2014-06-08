@@ -123,7 +123,8 @@ public final class CrashReporter {
 
         // Replace newline chars. with html newline elements (not needed in most cases)
         String text = exception.toString().replaceAll("\\r?\\n", "<br/>");
-        JLabel message = new JLabel("<html><h3>A fatal error occurred</h3><br/>" + text + "</html>");
+        String firstLine = I18N.getMessage("firstLine");
+        JLabel message = new JLabel("<html><h3>" + firstLine + "</h3><br/>" + text + "</html>");
         mainPanel.setPreferredSize(new Dimension(750, 450));
 
         mainPanel.add(message, BorderLayout.NORTH);
@@ -144,20 +145,20 @@ public final class CrashReporter {
         stackTraceArea.setText(stacktrace);
         stackTraceArea.setEditable(false);
         stackTraceArea.setCaretPosition(0);
-        tabPane.addTab("StackTrace", new JScrollPane(stackTraceArea));
+        tabPane.addTab(I18N.getMessage("stackTrace"), new JScrollPane(stackTraceArea));
 
         // Logfile tab
         final JTextArea logArea = new JTextArea();
         logArea.setText(logFileContent);
-        tabPane.addTab("Logfile", new JScrollPane(logArea));
+        tabPane.addTab(I18N.getMessage("logFile"), new JScrollPane(logArea));
 
         mainPanel.add(centerPanel, BorderLayout.CENTER);
         centerPanel.add(tabPane, BorderLayout.CENTER);
-        centerPanel.add(new JLabel("NOTE: you can edit the content of the log file before uploading"), BorderLayout.SOUTH);
+        centerPanel.add(new JLabel(I18N.getMessage("editBeforeUpload")), BorderLayout.SOUTH);
 
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new GridLayout(1, 3, 20, 0));
-        final JButton pastebinUpload = new JButton("Upload log file to PasteBin");
+        final JButton pastebinUpload = new JButton(I18N.getMessage("uploadLog"));
         pastebinUpload.setIcon(loadIcon("icons/pastebin.png"));
         pastebinUpload.addActionListener(new ActionListener() {
 
@@ -196,7 +197,7 @@ public final class CrashReporter {
         pastebinUpload.setEnabled(!logArea.getText().isEmpty());        // initial update of the button
 
         buttonPanel.add(pastebinUpload);
-        JButton githubIssueButton = new JButton("File an issue on GitHub");
+        JButton githubIssueButton = new JButton(I18N.getMessage("reportIssue"));
         githubIssueButton.setIcon(loadIcon("icons/github.png"));
         githubIssueButton.addActionListener(new ActionListener() {
 
@@ -206,7 +207,7 @@ public final class CrashReporter {
             }
         });
         buttonPanel.add(githubIssueButton);
-        JButton enterIrc = new JButton("Enter IRC channel");
+        JButton enterIrc = new JButton(I18N.getMessage("joinIrc"));
         enterIrc.setIcon(loadIcon("icons/irc.png"));
         enterIrc.addActionListener(new ActionListener() {
 
@@ -220,9 +221,9 @@ public final class CrashReporter {
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         // Custom close button
-        JButton closeButton = new JButton("Close", loadIcon("icons/close.png"));
+        JButton closeButton = new JButton(I18N.getMessage("close"), loadIcon("icons/close.png"));
 
-        JDialog dialog = createDialog(mainPanel, closeButton, "Fatal Error", JOptionPane.ERROR_MESSAGE);
+        JDialog dialog = createDialog(mainPanel, closeButton, I18N.getMessage("dialogTitle"), JOptionPane.ERROR_MESSAGE);
         dialog.setMinimumSize(new Dimension(450, 350));
         dialog.setResizable(true);      // disabled by default
         dialog.setVisible(true);
@@ -264,10 +265,10 @@ public final class CrashReporter {
     }
 
     protected static void uploadPaste(final PastebinPaste paste) {
-        final JLabel label = new JLabel("Uploading file - please wait ...");
+        final JLabel label = new JLabel(I18N.getMessage("waitForUpload"));
         label.setPreferredSize(new Dimension(250, 50));
 
-        final JButton closeButton = new JButton("Close", loadIcon("icons/close.png"));
+        final JButton closeButton = new JButton(I18N.getMessage("close"), loadIcon("icons/close.png"));
         closeButton.setEnabled(false);
 
         Runnable runnable = new Runnable() {
@@ -283,7 +284,8 @@ public final class CrashReporter {
                         public void run() {
                             closeButton.setEnabled(true);
                             final String url = link.getLink().toString();
-                            label.setText(String.format("<html>Paste uploaded to <a href=\"%s\">%s</a></html>", url, url));
+                            String uploadText = I18N.getMessage("uploadComplete");
+                            label.setText(String.format("<html>%s <a href=\"%s\">%s</a></html>", uploadText, url, url));
                             label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                             label.addMouseListener(new MouseAdapter() {
                                 public void mouseClicked(java.awt.event.MouseEvent e) {
@@ -300,7 +302,8 @@ public final class CrashReporter {
                         @Override
                         public void run() {
                             closeButton.setEnabled(true);
-                            label.setText("<html>Upload failed: <br/> " + e.getLocalizedMessage() + "</html>");
+                            String uploadFailed = I18N.getMessage("uploadFailed");
+                            label.setText("<html>" + uploadFailed + ":<br/> " + e.getLocalizedMessage() + "</html>");
                         }
                     });
                 }
@@ -310,7 +313,7 @@ public final class CrashReporter {
         Thread thread = new Thread(runnable, "Upload paste");
         thread.start();
 
-        JDialog dialog = createDialog(label, closeButton, "Upload to Pastebin", JOptionPane.INFORMATION_MESSAGE);
+        JDialog dialog = createDialog(label, closeButton, I18N.getMessage("uploadDialog"), JOptionPane.INFORMATION_MESSAGE);
         dialog.setVisible(true);
         dialog.dispose();
     }
@@ -341,14 +344,14 @@ public final class CrashReporter {
                 }
             } catch (Exception e) { // we catch all here, because we want to continue execution in all cases               
                 e.printStackTrace(System.err);
-                
+
                 StringWriter sw = new StringWriter();
                 builder.append("Could not open log file " + logFile.toString() + System.lineSeparator());
                 e.printStackTrace(new PrintWriter(sw));
                 builder.append(sw.toString());
             }
         }
-        
+
         return builder.toString();
     }
 }
