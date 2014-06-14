@@ -5,21 +5,24 @@ apply plugin: 'idea'
 
 import java.text.SimpleDateFormat;
 
-group = 'org.terasology'
-
-version = '1.1'
-
 def env = System.getenv()
 def versionInfoFile = new File(sourceSets.main.output.resourcesDir, 'versionInfo.properties')
 	
-// Mainly useful for local testing against Artifactory to make uniquely timestamped artifacts
-// Check to see if we're running in Jenkins and in that case attach a snapshot+job build number
-if (env.BUILD_NUMBER != null) {
-    version += '-SNAPSHOT+' + env.BUILD_NUMBER
-} else {
-    // Mainly useful for local testing against Artifactory to make uniquely timestamped artifacts
-    version += '-SNAPSHOT'  // + startDateTimeString
+/*
+ * Gets the version name from the latest Git tag
+ * Credits go to: http://ryanharter.com/blog
+ */
+def getVersionName = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'describe', '--tags'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
 }
+
+group = 'org.terasology'
+version = getVersionName()
 
 // We use both Maven Central and our own Artifactory instance, which contains module builds, extra libs, and so on
 repositories {
