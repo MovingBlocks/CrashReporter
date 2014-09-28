@@ -8,21 +8,21 @@ import java.text.SimpleDateFormat;
 def env = System.getenv()
 def versionInfoFile = new File(sourceSets.main.output.resourcesDir, 'versionInfo.properties')
 	
-/*
- * Gets the version name from the latest Git tag
- * Credits go to: http://ryanharter.com/blog
- */
-def getVersionName = { ->
-    def stdout = new ByteArrayOutputStream()
-    exec {
-        commandLine 'git', 'describe', '--tags'
-        standardOutput = stdout
-    }
-    return stdout.toString().trim()
+def getGitDesc() {
+	def cmd = "git describe --match ?.?* --dirty"
+
+	try {
+		def proc = cmd.execute()
+		proc.waitFor()					// wait for the command to finish
+		return proc.in.text.trim()		// "out" from the process is "in" for gradle
+	} catch (IOException e) {
+		logger.warn("Could not run '$cmd' - using date - {}", e.getLocalizedMessage());
+		return new Date().format('yyyy-MM-dd-HH-mm-ss');
+	}
 }
 
 group = 'org.terasology'
-version = getVersionName()
+version = getGitDesc()
 
 // We use both Maven Central and our own Artifactory instance, which contains module builds, extra libs, and so on
 repositories {
@@ -43,7 +43,7 @@ dependencies {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.12'
+    gradleVersion = '2.1'
 }
 
 def convertGitBranch = { gitBranch ->
