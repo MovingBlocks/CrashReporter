@@ -35,8 +35,7 @@ public class InteractiveTestCases {
 
     private static final Logger logger = LoggerFactory.getLogger(InteractiveTestCases.class);
 
-    @Test
-    public void main() throws Exception {
+    public static void main(String[] args) throws Exception {
 
         logger.info("Important information");
 
@@ -48,7 +47,7 @@ public class InteractiveTestCases {
 
             engine.init();
             engine.run();
-        } 
+        }
         catch (RuntimeException e) {
             logger.warn("An exception occurred", e);
 
@@ -64,8 +63,8 @@ public class InteractiveTestCases {
 
     private static void setupForExtraLongMessageException(MyEngine engine) throws Exception {
         String text =
-                "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor " + 
-                "invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam " + 
+                "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor " +
+                "invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam " +
                 "et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus";
 
         Mockito.doThrow(new RuntimeException(text)).when(engine).run();
