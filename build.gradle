@@ -7,22 +7,8 @@ import java.text.SimpleDateFormat;
 
 def env = System.getenv()
 def versionInfoFile = new File(sourceSets.main.output.resourcesDir, 'versionInfo.properties')
-	
-def getGitDesc() {
-	def cmd = "git describe --match ?.?* --dirty"
-
-	try {
-		def proc = cmd.execute()
-		proc.waitFor()					// wait for the command to finish
-		return proc.in.text.trim()		// "out" from the process is "in" for gradle
-	} catch (IOException e) {
-		logger.warn("Could not run '$cmd' - using date - {}", e.getLocalizedMessage());
-		return new Date().format('yyyy-MM-dd-HH-mm-ss');
-	}
-}
 
 group = 'org.terasology'
-version = getGitDesc()
 
 // We use both Maven Central and our own Artifactory instance, which contains module builds, extra libs, and so on
 repositories {
