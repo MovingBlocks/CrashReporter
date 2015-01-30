@@ -42,8 +42,8 @@ public class InteractiveTestCases {
         try (MyEngine engine = Mockito.mock(MyEngine.class))
         {
 //            setupForSingleException(engine);
-//            setupForSuppressException(engine);
-            setupForExtraLongMessageException(engine);
+            setupForSuppressException(engine);
+//            setupForExtraLongMessageException(engine);
 
             engine.init();
             engine.run();

@@ -16,53 +16,21 @@
 
 package org.terasology.crashreporter;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Desktop;
+import java.awt.Dialog;
 import java.awt.Dimension;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.image.BufferedImage;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.awt.event.ComponentEvent;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Properties;
 
-import javax.imageio.ImageIO;
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
 import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-
-import org.jpaste.exceptions.PasteException;
-import org.jpaste.pastebin.PasteExpireDate;
-import org.jpaste.pastebin.Pastebin;
-import org.jpaste.pastebin.PastebinLink;
-import org.jpaste.pastebin.PastebinPaste;
 
 /**
  * Displays a detailed error message and provides some options to communicate with devs.
@@ -111,41 +79,22 @@ public final class CrashReporter {
 
     protected static void showModalDialog(Throwable t, String logFileContent)
 	{
-        // Custom close button
-        JButton closeButton = new JButton(I18N.getMessage("close"), Resources.loadIcon("icons/close.png"));
-
         String dialogTitle = I18N.getMessage("dialogTitle");
         String version = Resources.getVersion();
 
         if (version != null)
             dialogTitle += " " + version;
 
-        MainPanel panel = new MainPanel(t, logFileContent);
-		JDialog dialog = createDialog(panel, closeButton, dialogTitle, JOptionPane.ERROR_MESSAGE);
-        dialog.setMinimumSize(new Dimension(450, 350));
+        RootPanel panel = new RootPanel(t, logFileContent);
+		JDialog dialog = new JDialog((Dialog) null, dialogTitle, true);
+		dialog.setContentPane(panel);
+        dialog.setMinimumSize(new Dimension(550, 350));
+//        dialog.setMaximumSize(new Dimension(750, 450));
+		dialog.setLocationRelativeTo(null);
         dialog.setResizable(true);      // disabled by default
         dialog.setVisible(true);
         dialog.dispose();
 	}
-
-    private static JDialog createDialog(Component mainPanel, JButton closeButton, String title, int messageType) {
-        Object[] opts = new Object[]{closeButton};
-
-        // The error-message pane
-        final JOptionPane pane = new JOptionPane(mainPanel, messageType, JOptionPane.DEFAULT_OPTION, null, opts, opts[0]);
-        closeButton.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // calling setValue() closes the dialog
-                pane.setValue("CLOSE"); // the actual value doesn't matter
-            }
-        });
-
-        // wrap it all in a dialog
-        JDialog dialog = pane.createDialog(title);
-        return dialog;
-    }
 
     private static String getLogFileContent(Path logFile) {
         StringBuilder builder = new StringBuilder();

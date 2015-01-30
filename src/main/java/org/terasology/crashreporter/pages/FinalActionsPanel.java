@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.terasology.crashreporter;
+package org.terasology.crashreporter.pages;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Desktop;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -40,6 +41,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -48,100 +50,37 @@ import org.jpaste.pastebin.PasteExpireDate;
 import org.jpaste.pastebin.Pastebin;
 import org.jpaste.pastebin.PastebinLink;
 import org.jpaste.pastebin.PastebinPaste;
+import org.terasology.crashreporter.I18N;
+import org.terasology.crashreporter.Resources;
 
-public class MainPanel extends JPanel
+public class FinalActionsPanel extends JPanel
 {
-    /**
-     * Username Terasology
-     * eMail pastebin@terasology.org
-     */
-    private static final String PASTEBIN_DEVELOPER_KEY = "1ed92217030bd6c2570fac91bcbfee78";
-
+	private static final String SUPPORT_FORUM_LINK = "http://forum.terasology.org/forum/support.20/";
     private static final String REPORT_ISSUE_LINK = "https://github.com/MovingBlocks/Terasology/issues/new";
     private static final String JOIN_IRC_LINK = "https://webchat.freenode.net/?channels=terasology";
 
-    public MainPanel(Throwable exception, final String logFileContent) {
+    public FinalActionsPanel() {
 
-        JPanel mainPanel = this;
-        mainPanel.setLayout(new BorderLayout(0, 20));
-
-        // Replace newline chars. with html newline elements (not needed in most cases)
-        String text = exception.toString().replaceAll("\\r?\\n", "<br/>");
-        String firstLine = I18N.getMessage("firstLine");
-        JLabel message = new JLabel("<html><h3>" + firstLine + "</h3><br/>" + text + "</html>");
-        mainPanel.setPreferredSize(new Dimension(750, 450));
-
-        mainPanel.add(message, BorderLayout.NORTH);
-
-        // convert exception stacktrace to string
-        StringWriter sw = new StringWriter();
-        exception.printStackTrace(new PrintWriter(sw));
-        String stacktrace = sw.toString();
-        // do not use exception.getStackTrace(), because it does 
-        // not contain suppressed exception or causes
-
-        // Tab pane
-        JPanel centerPanel = new JPanel(new BorderLayout()); 
-        final JTabbedPane tabPane = new JTabbedPane();
-
-        // StackTrace tab 
-        JTextArea stackTraceArea = new JTextArea();
-        stackTraceArea.setText(stacktrace);
-        stackTraceArea.setEditable(false);
-        stackTraceArea.setCaretPosition(0);
-        tabPane.addTab(I18N.getMessage("stackTrace"), new JScrollPane(stackTraceArea));
-
-        // Logfile tab
-        final JTextArea logArea = new JTextArea();
-        logArea.setText(logFileContent);
-        tabPane.addTab(I18N.getMessage("logFile"), new JScrollPane(logArea));
-
-        mainPanel.add(centerPanel, BorderLayout.CENTER);
-        centerPanel.add(tabPane, BorderLayout.CENTER);
-        centerPanel.add(new JLabel(I18N.getMessage("editBeforeUpload")), BorderLayout.SOUTH);
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new GridLayout(1, 3, 20, 0));
-        final JButton pastebinUpload = new JButton(I18N.getMessage("uploadLog"));
-        pastebinUpload.setIcon(Resources.loadIcon("icons/pastebin.png"));
-        pastebinUpload.addActionListener(new ActionListener() {
+    	JPanel panel = this;
+    	panel.setLayout(new GridLayout(0, 1, 20, 20));
+    	panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+    	
+    	Font buttonFont = getFont().deriveFont(Font.BOLD).deriveFont(14f);
+    	
+        JButton forumButton = new JButton(I18N.getMessage("gotoForum"));
+        forumButton.setIcon(Resources.loadIcon("icons/forum.png"));
+        forumButton.setFont(buttonFont);
+        forumButton.addActionListener(new ActionListener() {
 
             @Override
-            public void actionPerformed(ActionEvent event) {
-
-                String title = "Terasology Error Report";
-                PastebinPaste paste = Pastebin.newPaste(PASTEBIN_DEVELOPER_KEY, logArea.getText(), title);
-                paste.setPasteFormat("apache"); // Apache Log File Format - this is the closest I could find
-                paste.setPasteExpireDate(PasteExpireDate.ONE_MONTH);
-                uploadPaste(paste);
+            public void actionPerformed(ActionEvent e) {
+                openInBrowser(REPORT_ISSUE_LINK);
             }
         });
-        // disable upload if log area text field is empty
-        logArea.getDocument().addDocumentListener(new DocumentListener() {
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                update();
-            }
-
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                update();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                update();
-            }
-
-            private void update() {
-                pastebinUpload.setEnabled(!logArea.getText().isEmpty());
-            }
-        });
-        pastebinUpload.setEnabled(!logArea.getText().isEmpty());        // initial update of the button
-
-        buttonPanel.add(pastebinUpload);
+        panel.add(forumButton);
+        
         JButton githubIssueButton = new JButton(I18N.getMessage("reportIssue"));
+        githubIssueButton.setFont(buttonFont);
         githubIssueButton.setIcon(Resources.loadIcon("icons/github.png"));
         githubIssueButton.addActionListener(new ActionListener() {
 
@@ -150,8 +89,10 @@ public class MainPanel extends JPanel
                 openInBrowser(REPORT_ISSUE_LINK);
             }
         });
-        buttonPanel.add(githubIssueButton);
+        
+        panel.add(githubIssueButton);
         JButton enterIrc = new JButton(I18N.getMessage("joinIrc"));
+        enterIrc.setFont(buttonFont);
         enterIrc.setIcon(Resources.loadIcon("icons/irc.png"));
         enterIrc.addActionListener(new ActionListener() {
 
@@ -160,9 +101,9 @@ public class MainPanel extends JPanel
                 openInBrowser(JOIN_IRC_LINK);
             }
         });
-        buttonPanel.add(enterIrc);
+        panel.add(enterIrc);
 
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+//        add(panel, BorderLayout.CENTER);
     }
     
 

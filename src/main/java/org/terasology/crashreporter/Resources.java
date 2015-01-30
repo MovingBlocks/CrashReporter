@@ -33,6 +33,10 @@ import javax.swing.ImageIcon;
  */
 public class Resources
 {
+    /**
+     * @param fname the absolute path in the jar/project
+     * @return the buffered image, wrapped in an Icon
+     */
     public static Icon loadIcon(String fname) {
         try {
             String fullPath = "/" + fname;
