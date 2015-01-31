@@ -39,8 +39,7 @@ public class InteractiveTestCases {
 
         logger.info("Important information");
 
-        try (MyEngine engine = Mockito.mock(MyEngine.class))
-        {
+        try (MyEngine engine = Mockito.mock(MyEngine.class)) {
 //            setupForSingleException(engine);
             setupForSuppressException(engine);
 //            setupForExtraLongMessageException(engine);

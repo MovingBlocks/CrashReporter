@@ -32,14 +32,13 @@ import org.terasology.crashreporter.I18N;
  * Shows the error message plus stack trace
  * @author Martin Steiger
  */
-public class ErrorMessagePanel extends JPanel
-{
-	private static final long serialVersionUID = 8449689452512733452L;
+public class ErrorMessagePanel extends JPanel {
+    private static final long serialVersionUID = 8449689452512733452L;
 
-	/**
-	 * @param exception the exception to display
-	 */
-	public ErrorMessagePanel(Throwable exception) {
+    /**
+     * @param exception the exception to display
+     */
+    public ErrorMessagePanel(Throwable exception) {
 
         JPanel mainPanel = this;
         mainPanel.setLayout(new BorderLayout(0, 20));
@@ -47,8 +46,8 @@ public class ErrorMessagePanel extends JPanel
         // Replace newline chars. with html newline elements (not needed in most cases)
         String text = "<b>" + exception.getClass().getSimpleName() + "</b>";
         String exMessage = exception.getLocalizedMessage();
-        if (exMessage != null) { 
-        	text += ": " + exMessage;
+        if (exMessage != null) {
+            text += ": " + exMessage;
         }
 
         text = text.replaceAll("\\r?\\n", "<br/>");
@@ -62,15 +61,15 @@ public class ErrorMessagePanel extends JPanel
         StringWriter sw = new StringWriter();
         exception.printStackTrace(new PrintWriter(sw));
         String stacktrace = sw.toString();
-        // do not use exception.getStackTrace(), because it does 
+        // do not use exception.getStackTrace(), because it does
         // not contain suppressed exception or causes
 
-        // StackTrace tab 
+        // StackTrace tab
         JTextArea stackTraceArea = new JTextArea();
         stackTraceArea.setText(stacktrace);
         stackTraceArea.setEditable(false);
         stackTraceArea.setCaretPosition(0);
         add(new JScrollPane(stackTraceArea), BorderLayout.CENTER);
     }
-    
+
 }

@@ -17,31 +17,20 @@
 package org.terasology.crashreporter.pages;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Desktop;
 import java.awt.Dimension;
-import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 
 import org.jpaste.exceptions.PasteException;
 import org.jpaste.pastebin.PasteExpireDate;
@@ -51,52 +40,52 @@ import org.jpaste.pastebin.PastebinPaste;
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
 
-public class UploadPanel extends JPanel
-{
+public class UploadPanel extends JPanel {
+
+    private static final long serialVersionUID = -8247883237201535146L;
+
     /**
      * Username Terasology
      * eMail pastebin@terasology.org
      */
     private static final String PASTEBIN_DEVELOPER_KEY = "1ed92217030bd6c2570fac91bcbfee78";
 
-	private JButton uploadButton;
-	
-	private JLabel label;
+    private JButton uploadButton;
+
+    private JLabel label;
 
     public UploadPanel(String logFileContent) {
         setLayout(new BorderLayout(20, 20));
-    	label = new JLabel("2343");
+        label = new JLabel("2343");
         label.setPreferredSize(new Dimension(250, 50));
         add(label, BorderLayout.NORTH);
-        
+
         uploadButton = new JButton("Upload", Resources.loadIcon("icons/Arrow-up-icon.png"));
         uploadButton.setPreferredSize(new Dimension(250, 50));
         add(uploadButton, BorderLayout.CENTER);
-        
-        uploadButton.setEnabled(logFileContent != null  && !logFileContent.isEmpty());
-        uploadButton.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-				uploadButton.setText(I18N.getMessage("waitForUpload"));
-				uploadButton.setEnabled(false);
-			}
-		});
+
+        uploadButton.setEnabled(logFileContent != null && !logFileContent.isEmpty());
+        uploadButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                uploadButton.setText(I18N.getMessage("waitForUpload"));
+                uploadButton.setEnabled(false);
+            }
+        });
     }
-    
+
     @Override
-    public void setVisible(boolean aFlag)
-    {
-    	super.setVisible(aFlag);
-    	
-    	if (!aFlag) {
-    		return;
-    	}
-    	
-    	// TODO: check if another upload is necessary/possible
+    public void setVisible(boolean aFlag) {
+
+        super.setVisible(aFlag);
+
+        if (!aFlag) {
+            return;
+        }
+
+        // TODO: check if another upload is necessary/possible
     }
-    
+
     private void upload(String content) {
         String title = "Terasology Error Report";
         PastebinPaste paste = Pastebin.newPaste(PASTEBIN_DEVELOPER_KEY, content, title);
@@ -114,7 +103,7 @@ public class UploadPanel extends JPanel
 
                         @Override
                         public void run() {
-                        	uploadSuccess(link);
+                            uploadSuccess(link);
                         }
                     });
                 } catch (final PasteException e) {
@@ -122,7 +111,7 @@ public class UploadPanel extends JPanel
 
                         @Override
                         public void run() {
-                        	uploadFailed(e);
+                            uploadFailed(e);
                         }
                     });
                 }
@@ -132,7 +121,7 @@ public class UploadPanel extends JPanel
         Thread thread = new Thread(runnable, "Upload paste");
         thread.start();
     }
-    
+
     private void uploadSuccess(PastebinLink link) {
         final String url = link.getLink().toString();
         String uploadText = I18N.getMessage("uploadComplete");
@@ -140,12 +129,12 @@ public class UploadPanel extends JPanel
         label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         label.addMouseListener(new MouseAdapter() {
             @Override
-			public void mouseClicked(java.awt.event.MouseEvent e) {
+            public void mouseClicked(java.awt.event.MouseEvent e) {
                 openInBrowser(url);
             }
         });
     }
-    
+
     private void uploadFailed(Exception e) {
         String uploadFailed = I18N.getMessage("uploadFailed");
         label.setText("<html>" + uploadFailed + ":<br/> " + e.getLocalizedMessage() + "</html>");
@@ -164,5 +153,5 @@ public class UploadPanel extends JPanel
             }
         }
     }
-    
+
 }

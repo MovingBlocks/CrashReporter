@@ -17,48 +17,35 @@
 package org.terasology.crashreporter.pages;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Desktop;
 import java.awt.Dimension;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 
-import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
-import javax.swing.SwingUtilities;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 
-import org.jpaste.exceptions.PasteException;
-import org.jpaste.pastebin.PasteExpireDate;
-import org.jpaste.pastebin.Pastebin;
-import org.jpaste.pastebin.PastebinLink;
-import org.jpaste.pastebin.PastebinPaste;
 import org.terasology.crashreporter.I18N;
 
-public class LogViewPanel extends JPanel
-{
-    public LogViewPanel(String logFileContent) {
+/**
+ * Displays the content of the log file.
+ * @author Martin Steiger
+ */
+public class LogViewPanel extends JPanel {
+
+    private static final long serialVersionUID = -4556843268269818376L;
+
+    public LogViewPanel(Path logFile) {
+
+        final String logFileContent = getLogFileContent(logFile);
 
         JPanel mainPanel = this;
         mainPanel.setLayout(new BorderLayout(0, 10));
-
-        // Replace newline chars. with html newline elements (not needed in most cases)
-        mainPanel.setPreferredSize(new Dimension(750, 450));
 
         mainPanel.add(new JLabel("<html><h3>Upload log file</h3></html>"), BorderLayout.NORTH);
 
@@ -67,12 +54,36 @@ public class LogViewPanel extends JPanel
         add(new JScrollPane(logArea), BorderLayout.CENTER);
 
         String message = I18N.getMessage("editBeforeUpload");
+
+        // mark the text before ":" in bold - English NOTE:
         int idx = message.indexOf(':');
         if (idx > 0) {
-        	message = "<b>" + message.substring(0, idx) + "</b>" + message.substring(idx);
+            message = "<b>" + message.substring(0, idx) + "</b>" + message.substring(idx);
         }
-		JLabel editHintLabel = new JLabel("<html>" + message + "</html>");
-		add(editHintLabel, BorderLayout.SOUTH);
+        JLabel editHintLabel = new JLabel("<html>" + message + "</html>");
+        add(editHintLabel, BorderLayout.SOUTH);
     }
-    
+
+    private static String getLogFileContent(Path logFile) {
+        StringBuilder builder = new StringBuilder();
+
+        if (logFile != null) {
+            try {
+                List<String> lines = Files.readAllLines(logFile, Charset.defaultCharset());
+                for (String line : lines) {
+                    builder.append(line);
+                    builder.append(System.lineSeparator());
+                }
+            } catch (Exception e) { // we catch all here, because we want to continue execution in all cases
+                e.printStackTrace(System.err);
+
+                StringWriter sw = new StringWriter();
+                builder.append("Could not open log file " + logFile.toString() + System.lineSeparator());
+                e.printStackTrace(new PrintWriter(sw));
+                builder.append(sw.toString());
+            }
+        }
+
+        return builder.toString();
+    }
 }

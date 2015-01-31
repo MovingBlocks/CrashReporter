@@ -18,7 +18,6 @@ package org.terasology.crashreporter;
 
 import java.awt.Dialog;
 import java.awt.Dimension;
-import java.awt.event.ComponentEvent;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
@@ -52,8 +51,6 @@ public final class CrashReporter {
 
         // Swing element methods must be called in the swing thread
         try {
-            final String logFileContent = getLogFileContent(logFile);
-
             SwingUtilities.invokeAndWait(new Runnable() {
 
                 @Override
@@ -64,7 +61,7 @@ public final class CrashReporter {
                     } catch (Exception e) {
                         e.printStackTrace(System.err);
                     }
-                    showModalDialog(t, logFileContent);
+                    showModalDialog(t, logFile);
                     try {
                         UIManager.setLookAndFeel(oldLaF);
                     } catch (Exception e) {
@@ -77,45 +74,21 @@ public final class CrashReporter {
         }
     }
 
-    protected static void showModalDialog(Throwable t, String logFileContent)
-	{
+    protected static void showModalDialog(Throwable t, Path logFile) {
         String dialogTitle = I18N.getMessage("dialogTitle");
         String version = Resources.getVersion();
 
-        if (version != null)
+        if (version != null) {
             dialogTitle += " " + version;
+        }
 
-        RootPanel panel = new RootPanel(t, logFileContent);
-		JDialog dialog = new JDialog((Dialog) null, dialogTitle, true);
-		dialog.setContentPane(panel);
+        RootPanel panel = new RootPanel(t, logFile);
+        JDialog dialog = new JDialog((Dialog) null, dialogTitle, true);
+        dialog.setContentPane(panel);
         dialog.setMinimumSize(new Dimension(550, 350));
-//        dialog.setMaximumSize(new Dimension(750, 450));
-		dialog.setLocationRelativeTo(null);
+        dialog.setLocationRelativeTo(null);
         dialog.setResizable(true);      // disabled by default
         dialog.setVisible(true);
         dialog.dispose();
-	}
-
-    private static String getLogFileContent(Path logFile) {
-        StringBuilder builder = new StringBuilder();
-
-        if (logFile != null) {
-            try {
-                List<String> lines = Files.readAllLines(logFile, Charset.defaultCharset());
-                for (String line : lines) {
-                    builder.append(line);
-                    builder.append(System.lineSeparator());
-                }
-            } catch (Exception e) { // we catch all here, because we want to continue execution in all cases               
-                e.printStackTrace(System.err);
-
-                StringWriter sw = new StringWriter();
-                builder.append("Could not open log file " + logFile.toString() + System.lineSeparator());
-                e.printStackTrace(new PrintWriter(sw));
-                builder.append(sw.toString());
-            }
-        }
-
-        return builder.toString();
     }
 }

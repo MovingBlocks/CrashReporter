@@ -31,8 +31,7 @@ import javax.swing.ImageIcon;
  * Provides version info based on a "versionInfo.properties" file.
  * @author Martin Steiger
  */
-public class Resources
-{
+public class Resources {
     /**
      * @param fname the absolute path in the jar/project
      * @return the buffered image, wrapped in an Icon
@@ -51,20 +50,19 @@ public class Resources
             return null;
         }
     }
-    
+
     /**
      * @return the version string
      */
-    public static String getVersion()
-    {
+    public static String getVersion()     {
         String fname = "versionInfo.properties";
         URL location = Resources.class.getResource(fname);
 
-        if (location == null)
+        if (location == null) {
             return "";
+        }
 
-        try (InputStream is = location.openStream())
-        {
+        try (InputStream is = location.openStream()) {
             Properties props = new Properties();
             props.load(is);
             return props.getProperty("displayVersion", "");

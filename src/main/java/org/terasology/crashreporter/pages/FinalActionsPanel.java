@@ -53,20 +53,18 @@ import org.jpaste.pastebin.PastebinPaste;
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
 
-public class FinalActionsPanel extends JPanel
-{
-	private static final String SUPPORT_FORUM_LINK = "http://forum.terasology.org/forum/support.20/";
+public class FinalActionsPanel extends JPanel {
+    private static final String SUPPORT_FORUM_LINK = "http://forum.terasology.org/forum/support.20/";
     private static final String REPORT_ISSUE_LINK = "https://github.com/MovingBlocks/Terasology/issues/new";
     private static final String JOIN_IRC_LINK = "https://webchat.freenode.net/?channels=terasology";
 
     public FinalActionsPanel() {
 
-    	JPanel panel = this;
-    	panel.setLayout(new GridLayout(0, 1, 20, 20));
-    	panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-    	
-    	Font buttonFont = getFont().deriveFont(Font.BOLD).deriveFont(14f);
-    	
+        setLayout(new GridLayout(0, 1, 20, 20));
+        setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        Font buttonFont = getFont().deriveFont(Font.BOLD).deriveFont(14f);
+
         JButton forumButton = new JButton(I18N.getMessage("gotoForum"));
         forumButton.setIcon(Resources.loadIcon("icons/forum.png"));
         forumButton.setFont(buttonFont);
@@ -74,23 +72,11 @@ public class FinalActionsPanel extends JPanel
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                openInBrowser(REPORT_ISSUE_LINK);
+                openInBrowser(SUPPORT_FORUM_LINK);
             }
         });
-        panel.add(forumButton);
-        
-        JButton githubIssueButton = new JButton(I18N.getMessage("reportIssue"));
-        githubIssueButton.setFont(buttonFont);
-        githubIssueButton.setIcon(Resources.loadIcon("icons/github.png"));
-        githubIssueButton.addActionListener(new ActionListener() {
+        add(forumButton);
 
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                openInBrowser(REPORT_ISSUE_LINK);
-            }
-        });
-        
-        panel.add(githubIssueButton);
         JButton enterIrc = new JButton(I18N.getMessage("joinIrc"));
         enterIrc.setFont(buttonFont);
         enterIrc.setIcon(Resources.loadIcon("icons/irc.png"));
@@ -101,11 +87,20 @@ public class FinalActionsPanel extends JPanel
                 openInBrowser(JOIN_IRC_LINK);
             }
         });
-        panel.add(enterIrc);
+        add(enterIrc);
 
-//        add(panel, BorderLayout.CENTER);
+        JButton githubIssueButton = new JButton(I18N.getMessage("reportIssue"));
+        githubIssueButton.setFont(buttonFont);
+        githubIssueButton.setIcon(Resources.loadIcon("icons/github.png"));
+        githubIssueButton.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                openInBrowser(REPORT_ISSUE_LINK);
+            }
+        });
+        add(githubIssueButton);
     }
-    
 
     protected static void uploadPaste(final PastebinPaste paste) {
         final JLabel label = new JLabel(I18N.getMessage("waitForUpload"));
@@ -132,7 +127,7 @@ public class FinalActionsPanel extends JPanel
                             label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                             label.addMouseListener(new MouseAdapter() {
                                 @Override
-								public void mouseClicked(java.awt.event.MouseEvent e) {
+                                public void mouseClicked(java.awt.event.MouseEvent e) {
                                     openInBrowser(url);
                                 }
                             });
@@ -193,5 +188,5 @@ public class FinalActionsPanel extends JPanel
         JDialog dialog = pane.createDialog(title);
         return dialog;
     }
-    
+
 }
