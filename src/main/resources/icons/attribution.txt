@@ -8,11 +8,11 @@ Commercial usage: Allowed
 
 http://www.iconarchive.com/show/blogger-icons-by-rafiqul-hassan/Arrow-Next-icon.html
 
-
-
-
+----------------------------------------------------------------------------------------------------------------
 
 Actions irc join channel Icon
+Actions application exit Icon
+Actions dialog close Icon
 
 Artist: Oxygen Team
 Iconset: Oxygen Icons (883 icons)
@@ -21,6 +21,8 @@ Commercial usage: Allowed
 
 http://www.iconarchive.com/show/oxygen-icons-by-oxygen-icons.org/Actions-irc-join-channel-icon.html
 
+
+----------------------------------------------------------------------------------------------------------------
 
 Arrow up Icon
 

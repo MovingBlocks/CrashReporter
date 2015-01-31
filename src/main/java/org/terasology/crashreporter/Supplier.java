@@ -16,35 +16,10 @@
 
 package org.terasology.crashreporter;
 
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.image.BufferedImage;
-
-import javax.swing.JComponent;
-
 /**
- * TODO Type description
+ * TODO: Copy from java.lang - remove when Java8 is in place.
  * @author Martin Steiger
  */
-public class JImage extends JComponent {
-
-    private static final long serialVersionUID = -3761506251509784400L;
-
-    private BufferedImage image;
-
-    /**
-     * @param loadImage
-     */
-    public JImage(BufferedImage image) {
-        this.image = image;
-        setPreferredSize(new Dimension(image.getWidth(), image.getHeight()));
-    }
-
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-
-        g.drawImage(image, 0, 0, null);
-    }
-
+public interface Supplier<T> {
+    T get();
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.terasology.layout;
+package org.terasology.gui;
 
 import java.awt.CardLayout;
 import java.awt.Component;

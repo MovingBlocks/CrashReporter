@@ -21,12 +21,15 @@ import java.awt.Dimension;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.SwingConstants;
 
 import org.terasology.crashreporter.I18N;
+import org.terasology.crashreporter.Resources;
 
 /**
  * Shows the error message plus stack trace
@@ -52,7 +55,9 @@ public class ErrorMessagePanel extends JPanel {
 
         text = text.replaceAll("\\r?\\n", "<br/>");
         String firstLine = I18N.getMessage("firstLine");
-        JLabel message = new JLabel("<html><h3>" + firstLine + "</h3><br/>" + text + "</html>");
+        Icon titleIcon = Resources.loadIcon("icons/Actions-dialog-close-icon.png");
+        String htmlText = "<html><h3>" + firstLine + "</h3>" + text + "</html>";
+        JLabel message = new JLabel(htmlText, titleIcon, SwingConstants.LEFT);
         mainPanel.setPreferredSize(new Dimension(750, 450));
 
         mainPanel.add(message, BorderLayout.NORTH);

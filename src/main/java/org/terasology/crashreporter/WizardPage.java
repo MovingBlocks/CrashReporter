@@ -16,7 +16,11 @@
 
 package org.terasology.crashreporter;
 
-import javax.swing.JComponent;
+import javax.swing.JPanel;
 
-public abstract class WizardPage extends JComponent {
+public class WizardPage extends JPanel {
+
+    private static final long serialVersionUID = -9093710795515417352L;
+
+
 }

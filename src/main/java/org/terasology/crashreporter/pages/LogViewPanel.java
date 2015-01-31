@@ -24,12 +24,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.SwingConstants;
 
 import org.terasology.crashreporter.I18N;
+import org.terasology.crashreporter.Resources;
 
 /**
  * Displays the content of the log file.
@@ -52,8 +55,10 @@ public class LogViewPanel extends JPanel {
         String readablePath = logFile.toAbsolutePath().normalize().toString();
         String loc = I18N.getMessage("fileLocation") + ": " + readablePath;
 
-        mainPanel.add(new JLabel("<html><h3>" + caption + "</h3><p>" + loc + "</p></html>"), BorderLayout.NORTH);
-
+        Icon titleIcon = Resources.loadIcon("icons/Actions-document-properties-icon.png");
+        String htmlText = "<html><h3>" + caption + "</h3><p>" + loc + "</p></html>";
+        JLabel title = new JLabel(htmlText, titleIcon, SwingConstants.LEFT);
+        mainPanel.add(title, BorderLayout.NORTH);
 
         logArea = new JTextArea();
         logArea.setText(logFileContent);

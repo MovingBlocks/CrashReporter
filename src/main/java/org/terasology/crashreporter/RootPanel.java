@@ -32,7 +32,6 @@ import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.border.Border;
@@ -43,13 +42,15 @@ import org.terasology.crashreporter.pages.ErrorMessagePanel;
 import org.terasology.crashreporter.pages.FinalActionsPanel;
 import org.terasology.crashreporter.pages.LogViewPanel;
 import org.terasology.crashreporter.pages.UploadPanel;
-import org.terasology.layout.RXCardLayout;
+import org.terasology.gui.JImage;
+import org.terasology.gui.RXCardLayout;
 
 /**
  * The central panel that contains the wizard pages.
  * @author Martin Steiger
  */
 public class RootPanel extends JPanel {
+
     private static final long serialVersionUID = -907008390086125919L;
 
     /**
@@ -63,12 +64,18 @@ public class RootPanel extends JPanel {
 
         Icon prevIcon = Resources.loadIcon("icons/Arrow-Prev-icon.png");
         Icon nextIcon = Resources.loadIcon("icons/Arrow-Next-icon.png");
-        Icon closeIcon = Resources.loadIcon("icons/Actions-dialog-close-icon.png");
+        Icon closeIcon = Resources.loadIcon("icons/Actions-application-exit-icon.png");
 
         List<JComponent> pages = new ArrayList<>();
+        LogViewPanel logViewPanel = new LogViewPanel(logFile);
         pages.add(new ErrorMessagePanel(exception));
-        pages.add(new LogViewPanel(logFile));
-        pages.add(new UploadPanel("sdfsdfd"));
+        pages.add(logViewPanel);
+        pages.add(new UploadPanel(new Supplier<String>() {
+            @Override
+            public String get() {
+                    return logViewPanel.getLog();
+                }
+            }));
         pages.add(new FinalActionsPanel());
 
         JPanel mainPanel = new JPanel();
@@ -80,6 +87,7 @@ public class RootPanel extends JPanel {
         }
 
         JComponent image = new JImage(Resources.loadImage("icons/banner.jpg"));
+        image.setBackground(new Color(20, 20, 10));
         image.setBorder(new MatteBorder(0, 0, 0, 1, Color.LIGHT_GRAY));
         add(image, BorderLayout.WEST);
         add(mainPanel, BorderLayout.CENTER);
