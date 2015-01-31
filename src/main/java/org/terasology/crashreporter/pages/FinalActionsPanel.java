@@ -16,7 +16,6 @@
 
 package org.terasology.crashreporter.pages;
 
-import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Desktop;
@@ -27,8 +26,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -37,23 +34,22 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 
 import org.jpaste.exceptions.PasteException;
-import org.jpaste.pastebin.PasteExpireDate;
-import org.jpaste.pastebin.Pastebin;
 import org.jpaste.pastebin.PastebinLink;
 import org.jpaste.pastebin.PastebinPaste;
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
 
+/**
+ * Lists a few actions before closing the dialog
+ * @author Martin Steiger
+ */
 public class FinalActionsPanel extends JPanel {
+    private static final long serialVersionUID = 2639334979749507943L;
+
     private static final String SUPPORT_FORUM_LINK = "http://forum.terasology.org/forum/support.20/";
     private static final String REPORT_ISSUE_LINK = "https://github.com/MovingBlocks/Terasology/issues/new";
     private static final String JOIN_IRC_LINK = "https://webchat.freenode.net/?channels=terasology";

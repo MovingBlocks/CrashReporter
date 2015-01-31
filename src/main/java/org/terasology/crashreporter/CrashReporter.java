@@ -84,6 +84,7 @@ public final class CrashReporter {
 
         RootPanel panel = new RootPanel(t, logFile);
         JDialog dialog = new JDialog((Dialog) null, dialogTitle, true);
+        dialog.setIconImage(Resources.loadImage("icons/server.png"));
         dialog.setContentPane(panel);
         dialog.setMinimumSize(new Dimension(550, 350));
         dialog.setLocationRelativeTo(null);

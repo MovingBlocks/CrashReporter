@@ -17,7 +17,6 @@
 package org.terasology.crashreporter.pages;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
@@ -40,16 +39,23 @@ public class LogViewPanel extends JPanel {
 
     private static final long serialVersionUID = -4556843268269818376L;
 
+    private final JTextArea logArea;
+
     public LogViewPanel(Path logFile) {
 
-        final String logFileContent = getLogFileContent(logFile);
+        final String logFileContent = readLogFileContent(logFile);
 
         JPanel mainPanel = this;
-        mainPanel.setLayout(new BorderLayout(0, 10));
+        mainPanel.setLayout(new BorderLayout(0, 5));
 
-        mainPanel.add(new JLabel("<html><h3>Upload log file</h3></html>"), BorderLayout.NORTH);
+        String caption = I18N.getMessage("viewLog");
+        String readablePath = logFile.toAbsolutePath().normalize().toString();
+        String loc = I18N.getMessage("fileLocation") + ": " + readablePath;
 
-        final JTextArea logArea = new JTextArea();
+        mainPanel.add(new JLabel("<html><h3>" + caption + "</h3><p>" + loc + "</p></html>"), BorderLayout.NORTH);
+
+
+        logArea = new JTextArea();
         logArea.setText(logFileContent);
         add(new JScrollPane(logArea), BorderLayout.CENTER);
 
@@ -64,7 +70,14 @@ public class LogViewPanel extends JPanel {
         add(editHintLabel, BorderLayout.SOUTH);
     }
 
-    private static String getLogFileContent(Path logFile) {
+    /**
+     * @return the (edited) log file contents
+     */
+    public String getLog() {
+        return logArea.getText();
+    }
+
+    private static String readLogFileContent(Path logFile) {
         StringBuilder builder = new StringBuilder();
 
         if (logFile != null) {

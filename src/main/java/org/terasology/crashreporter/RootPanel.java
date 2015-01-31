@@ -59,7 +59,7 @@ public class RootPanel extends JPanel {
     public RootPanel(Throwable exception, Path logFile) {
 
         setLayout(new BorderLayout());
-        Font buttonFont = getFont().deriveFont(Font.BOLD).deriveFont(14f);
+        Font buttonFont = getFont().deriveFont(Font.BOLD, 14f);
 
         Icon prevIcon = Resources.loadIcon("icons/Arrow-Prev-icon.png");
         Icon nextIcon = Resources.loadIcon("icons/Arrow-Next-icon.png");
@@ -79,7 +79,8 @@ public class RootPanel extends JPanel {
             mainPanel.add(page);
         }
 
-        JLabel image = new JLabel(Resources.loadIcon("icons/banner.jpg"));
+        JComponent image = new JImage(Resources.loadImage("icons/banner.jpg"));
+        image.setBorder(new MatteBorder(0, 0, 0, 1, Color.LIGHT_GRAY));
         add(image, BorderLayout.WEST);
         add(mainPanel, BorderLayout.CENTER);
 
