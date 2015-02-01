@@ -17,8 +17,11 @@
 package org.terasology.crashreporter;
 
 import java.awt.GraphicsEnvironment;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Locale;
 
 import org.mockito.Mockito;
 import org.slf4j.Logger;
@@ -39,13 +42,22 @@ public final class InteractiveTestCases {
     }
 
     public static void main(String[] args) throws Exception {
+        System.out.println("ARGS: " + Arrays.toString(args));
 
-        logger.info("Important information");
+        String methodName = args.length > 0 ? args[0] : "setupForSingleException";
+        logger.info("Method: {}", methodName);
+
+        String logFileName = args.length > 1 ? args[1] : "details.log";
+        logger.info("Log file: {}", logFileName);
+
+        Locale locale = args.length > 2 ? new Locale(args[2]) : Locale.getDefault();
+        logger.info("Log file: {}", locale);
+
+        Locale.setDefault(locale);
 
         try (MyEngine engine = Mockito.mock(MyEngine.class)) {
-//            setupForSingleException(engine);
-            setupForSuppressException(engine);
-//            setupForExtraLongMessageException(engine);
+            Method method = InteractiveTestCases.class.getDeclaredMethod(methodName, MyEngine.class);
+            method.invoke(null, engine);
 
             engine.init();
             engine.run();
@@ -55,8 +67,7 @@ public final class InteractiveTestCases {
 
             if (!GraphicsEnvironment.isHeadless()) {
                 Path logPath = Paths.get(".");
-                Path logFile = logPath.resolve("details.log");
-//              Path logFile = logPath.resolve("src/test/resources/lengthy_logfile.log");
+                Path logFile = logPath.resolve(logFileName);
                 CrashReporter.report(e, logFile);
             }
         }

@@ -70,6 +70,12 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = 'javadoc'
 }
 
+task runInteractiveTest(type: JavaExec, dependsOn: testClasses) {
+    main = "org.terasology.crashreporter.InteractiveTestCases"
+    classpath = files(sourceSets.test.runtimeClasspath)
+	args = ['setupForExtraLongMessageException', 'src/test/resources/lengthy_logfile.log', 'en-US']
+}
+
 // Define the artifacts we want to publish (the .pom will also be included since the Maven plugin is active)
 artifacts {
     archives sourceJar

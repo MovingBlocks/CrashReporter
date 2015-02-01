@@ -192,6 +192,7 @@ public class UploadPanel extends JPanel {
         prevUpload = content;
         uploadURL = url;
         uploadSkipButton.setEnabled(false);
+        firePropertyChange("pageComplete", Boolean.FALSE, Boolean.TRUE);
     }
 
     private void uploadFailed(Exception e) {

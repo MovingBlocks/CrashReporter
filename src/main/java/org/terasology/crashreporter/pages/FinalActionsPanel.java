@@ -71,7 +71,7 @@ public class FinalActionsPanel extends JPanel {
         setLayout(new BorderLayout(0, 10));
         setBorder(new EmptyBorder(0, 10, 10, 10));
 
-        String firstLine = I18N.getMessage("reportIssue2");
+        String firstLine = I18N.getMessage("reportProblem");
         String htmlText = "<html><h3>" + firstLine + "</h3></html>";
         Icon titleIcon = Resources.loadIcon("icons/Actions-irc-voice-icon.png");
         JLabel message = new JLabel(htmlText, titleIcon, SwingConstants.LEFT);
