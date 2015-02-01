@@ -42,7 +42,7 @@ public final class CrashReporter {
      * @param t the exception
      * @param logFile the log file path or <code>null</code>
      */
-    public static void report(final Throwable t, Path logFile) {
+    public static void report(final Throwable t, final Path logFile) {
 
         // Swing element methods must be called in the swing thread
         try {

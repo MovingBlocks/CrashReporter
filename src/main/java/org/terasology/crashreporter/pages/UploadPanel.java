@@ -46,6 +46,10 @@ import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
 import org.terasology.crashreporter.Supplier;
 
+/**
+ * The panel where the log file content is uploaded to some web storage
+ * @author Martin Steiger
+ */
 public class UploadPanel extends JPanel {
 
     private static final long serialVersionUID = -8247883237201535146L;
@@ -140,9 +144,9 @@ public class UploadPanel extends JPanel {
         return uploadURL;
     }
 
-    private void upload(String content) {
+    private void upload(final String content) {
         String title = "Terasology Error Report";
-        PastebinPaste paste = Pastebin.newPaste(PASTEBIN_DEVELOPER_KEY, content, title);
+        final PastebinPaste paste = Pastebin.newPaste(PASTEBIN_DEVELOPER_KEY, content, title);
         paste.setPasteFormat("apache"); // Apache Log File Format - this is the closest I could find
         paste.setPasteExpireDate(PasteExpireDate.ONE_MONTH);
 

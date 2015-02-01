@@ -56,22 +56,22 @@ public class RootPanel extends JPanel {
 
     /**
      * @param exception the exception that occurred
-     * @param logFileContent the content of the log file or <code>null</code>
+     * @param logFile the log file or <code>null</code>
      */
     public RootPanel(Throwable exception, Path logFile) {
 
         setLayout(new BorderLayout());
         Font buttonFont = getFont().deriveFont(Font.BOLD, 14f);
 
-        Icon prevIcon = Resources.loadIcon("icons/Arrow-Prev-icon.png");
-        Icon nextIcon = Resources.loadIcon("icons/Arrow-Next-icon.png");
-        Icon closeIcon = Resources.loadIcon("icons/Actions-application-exit-icon.png");
-
+        final Icon prevIcon = Resources.loadIcon("icons/Arrow-Prev-icon.png");
+        final Icon nextIcon = Resources.loadIcon("icons/Arrow-Next-icon.png");
+        final Icon closeIcon = Resources.loadIcon("icons/Actions-application-exit-icon.png");
+        
         List<JComponent> pages = new ArrayList<>();
-        LogViewPanel logViewPanel = new LogViewPanel(logFile);
+        final LogViewPanel logViewPanel = new LogViewPanel(logFile);
         pages.add(new ErrorMessagePanel(exception));
         pages.add(logViewPanel);
-        UploadPanel uploadPanel = new UploadPanel(new Supplier<String>() {
+        final UploadPanel uploadPanel = new UploadPanel(new Supplier<String>() {
             @Override
             public String get() {
                     return logViewPanel.getLog();
@@ -86,8 +86,8 @@ public class RootPanel extends JPanel {
             }
         }));
 
-        JPanel mainPanel = new JPanel();
-        RXCardLayout cards = new RXCardLayout(5, 5);
+        final JPanel mainPanel = new JPanel();
+        final RXCardLayout cards = new RXCardLayout(5, 5);
         mainPanel.setLayout(cards);
 
         for (JComponent page : pages) {
@@ -105,8 +105,8 @@ public class RootPanel extends JPanel {
         buttonPanel.setBorder(BorderFactory.createCompoundBorder(lineBorder, new EmptyBorder(10, 25, 10, 25)));
         buttonPanel.setLayout(new GridLayout(1, 0, 200, 0));
 
-        JButton prevButton = new JButton(I18N.getMessage("prev"), prevIcon);
-        JButton nextButton = new JButton(I18N.getMessage("next"), nextIcon);
+        final JButton prevButton = new JButton(I18N.getMessage("prev"), prevIcon);
+        final JButton nextButton = new JButton(I18N.getMessage("next"), nextIcon);
 
         for (JComponent page : pages) {
             page.addPropertyChangeListener("pageComplete", new PageCompleteListener(nextButton));
