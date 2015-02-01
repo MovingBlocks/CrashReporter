@@ -2,6 +2,9 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
+apply plugin: 'checkstyle'
+apply plugin: 'pmd'
+apply plugin: 'findbugs'
 
 import java.text.SimpleDateFormat;
 
@@ -80,4 +83,20 @@ task runInteractiveTest(type: JavaExec, dependsOn: testClasses) {
 artifacts {
     archives sourceJar
     archives javadocJar
+}
+
+checkstyle {
+    ignoreFailures = true
+    configProperties.samedir = checkstyle.configFile.parentFile
+}
+
+pmd {
+    ignoreFailures = true
+    ruleSetFiles = files("config/pmd/pmd.xml")
+}
+
+findbugs {
+    ignoreFailures = true
+    effort = 'max'
+    reportLevel = 'medium'
 }
