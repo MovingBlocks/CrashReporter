@@ -71,7 +71,7 @@ public class FinalActionsPanel extends JPanel {
         setLayout(new BorderLayout(0, 10));
         setBorder(new EmptyBorder(0, 10, 10, 10));
 
-        String firstLine = I18N.getMessage("reportIssue");
+        String firstLine = I18N.getMessage("reportIssue2");
         String htmlText = "<html><h3>" + firstLine + "</h3></html>";
         Icon titleIcon = Resources.loadIcon("icons/Actions-irc-voice-icon.png");
         JLabel message = new JLabel(htmlText, titleIcon, SwingConstants.LEFT);
@@ -136,7 +136,7 @@ public class FinalActionsPanel extends JPanel {
         JPanel linkPanel = new JPanel();
         linkPanel.setLayout(new BorderLayout(5, 0));
 
-        JLabel linkLabel = new JLabel("Log File");
+        JLabel linkLabel = new JLabel(I18N.getMessage("logFileUrl"));
         linkPanel.add(linkLabel, BorderLayout.WEST);
 
         linkText = new JTextArea();
@@ -146,7 +146,7 @@ public class FinalActionsPanel extends JPanel {
         linkPanel.add(linkText, BorderLayout.CENTER);
 
         copyLinkButton = new JButton(Resources.loadIcon("icons/Actions-edit-paste-icon.png"));
-        copyLinkButton.setToolTipText("Copy to clipboard");
+        copyLinkButton.setToolTipText(I18N.getMessage("copyToClipboard"));
         copyLinkButton.addActionListener(new ActionListener() {
 
             @Override

@@ -73,7 +73,7 @@ public class UploadPanel extends JPanel {
         statusLabel = new JLabel(I18N.getMessage("noUpload"), SwingConstants.RIGHT);
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.BOLD));
         statusLabel.setBorder(new EmptyBorder(0, 5, 0, 5));
-        String title = "<html><h3>" + I18N.getMessage("uploadLog") + "</h></html>";
+        String title = "<html><h3>" + I18N.getMessage("uploadLog2") + "</h></html>";
         JLabel titleLabel = new JLabel(title, Resources.loadIcon("icons/Arrow-up-icon.png"), SwingConstants.CENTER);
         titleLabel.setBorder(new EmptyBorder(10, 0, 0, 0));
         add(titleLabel, BorderLayout.NORTH);
