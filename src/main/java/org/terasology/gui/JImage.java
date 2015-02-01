@@ -16,7 +16,6 @@
 
 package org.terasology.gui;
 
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
@@ -24,7 +23,7 @@ import java.awt.image.BufferedImage;
 import javax.swing.JComponent;
 
 /**
- * TODO Type description
+ * Displays an image (and a background color)
  * @author Martin Steiger
  */
 public class JImage extends JComponent {

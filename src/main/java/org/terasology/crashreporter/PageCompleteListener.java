@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 MovingBlocks
+ * Copyright 2015 MovingBlocks
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,29 @@
 
 package org.terasology.crashreporter;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+
+import javax.swing.JComponent;
+
 /**
- * A simple definition of a game engine
+ * TODO Type description
  * @author Martin Steiger
  */
-public interface MyEngine extends AutoCloseable {
+class PageCompleteListener implements PropertyChangeListener {
 
-    void init();
+    private final JComponent nextButton;
 
-    void run();
+    /**
+     * @param nextButton
+     */
+    public PageCompleteListener(JComponent nextButton) {
+        this.nextButton = nextButton;
+    }
+
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        nextButton.setEnabled(evt.getNewValue().equals(Boolean.TRUE));
+    }
+
 }

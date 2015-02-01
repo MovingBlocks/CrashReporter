@@ -16,48 +16,71 @@
 
 package org.terasology.crashreporter.pages;
 
-import java.awt.Component;
-import java.awt.Cursor;
+import java.awt.BorderLayout;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
+import javax.swing.JTextArea;
+import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
-import org.jpaste.exceptions.PasteException;
-import org.jpaste.pastebin.PastebinLink;
-import org.jpaste.pastebin.PastebinPaste;
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
+import org.terasology.crashreporter.Supplier;
 
 /**
  * Lists a few actions before closing the dialog
  * @author Martin Steiger
  */
 public class FinalActionsPanel extends JPanel {
+
     private static final long serialVersionUID = 2639334979749507943L;
 
     private static final String SUPPORT_FORUM_LINK = "http://forum.terasology.org/forum/support.20/";
     private static final String REPORT_ISSUE_LINK = "https://github.com/MovingBlocks/Terasology/issues/new";
     private static final String JOIN_IRC_LINK = "https://webchat.freenode.net/?channels=terasology";
 
-    public FinalActionsPanel() {
+    private final Supplier<URL> uploadedFile;
 
-        setLayout(new GridLayout(0, 1, 20, 20));
-        setBorder(new EmptyBorder(20, 20, 20, 20));
+    private final JTextArea linkText;
+
+    private final JButton copyLinkButton;
+
+    private boolean pageComplete;
+
+    public FinalActionsPanel(Supplier<URL> uploadedFile) {
+
+        this.uploadedFile = uploadedFile;
+
+        setLayout(new BorderLayout(0, 10));
+        setBorder(new EmptyBorder(0, 10, 10, 10));
+
+        String firstLine = I18N.getMessage("reportIssue");
+        String htmlText = "<html><h3>" + firstLine + "</h3></html>";
+        Icon titleIcon = Resources.loadIcon("icons/Actions-irc-voice-icon.png");
+        JLabel message = new JLabel(htmlText, titleIcon, SwingConstants.LEFT);
+
+        add(message, BorderLayout.NORTH);
+
+        JPanel gridPanel = new JPanel();
+        gridPanel.setLayout(new GridLayout(0, 1, 0, 10));
+//        gridPanel.setBorder(new EmptyBorder(20, 10, 20, 10));
 
         Font buttonFont = getFont().deriveFont(Font.BOLD).deriveFont(14f);
 
@@ -69,9 +92,12 @@ public class FinalActionsPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 openInBrowser(SUPPORT_FORUM_LINK);
+                pageComplete = true;
+                firePropertyChange("pageComplete", !pageComplete, pageComplete);
             }
         });
-        add(forumButton);
+        forumButton.setToolTipText(SUPPORT_FORUM_LINK);
+        gridPanel.add(forumButton);
 
         JButton enterIrc = new JButton(I18N.getMessage("joinIrc"));
         enterIrc.setFont(buttonFont);
@@ -81,9 +107,12 @@ public class FinalActionsPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 openInBrowser(JOIN_IRC_LINK);
+                pageComplete = true;
+                firePropertyChange("pageComplete", !pageComplete, pageComplete);
             }
         });
-        add(enterIrc);
+        enterIrc.setToolTipText(JOIN_IRC_LINK);
+        gridPanel.add(enterIrc);
 
         JButton githubIssueButton = new JButton(I18N.getMessage("reportIssue"));
         githubIssueButton.setFont(buttonFont);
@@ -93,62 +122,61 @@ public class FinalActionsPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 openInBrowser(REPORT_ISSUE_LINK);
+                pageComplete = true;
+                firePropertyChange("pageComplete", !pageComplete, pageComplete);
             }
         });
-        add(githubIssueButton);
-    }
+        githubIssueButton.setToolTipText(REPORT_ISSUE_LINK);
+        gridPanel.add(githubIssueButton);
 
-    protected static void uploadPaste(final PastebinPaste paste) {
-        final JLabel label = new JLabel(I18N.getMessage("waitForUpload"));
-        label.setPreferredSize(new Dimension(250, 50));
+        add(gridPanel, BorderLayout.CENTER);
 
-        final JButton closeButton = new JButton(I18N.getMessage("close"), Resources.loadIcon("icons/close.png"));
-        closeButton.setEnabled(false);
+        // -------- link text -------
 
-        Runnable runnable = new Runnable() {
+        JPanel linkPanel = new JPanel();
+        linkPanel.setLayout(new BorderLayout(5, 0));
+
+        JLabel linkLabel = new JLabel("Log File");
+        linkPanel.add(linkLabel, BorderLayout.WEST);
+
+        linkText = new JTextArea();
+        linkText.setPreferredSize(new Dimension(250, 25));
+        linkText.setBorder(BorderFactory.createEtchedBorder());
+        linkText.setEditable(false);
+        linkPanel.add(linkText, BorderLayout.CENTER);
+
+        copyLinkButton = new JButton(Resources.loadIcon("icons/Actions-edit-paste-icon.png"));
+        copyLinkButton.setToolTipText("Copy to clipboard");
+        copyLinkButton.addActionListener(new ActionListener() {
 
             @Override
-            public void run() {
-                try {
-                    final PastebinLink link = paste.paste();
-
-                    SwingUtilities.invokeLater(new Runnable() {
-
-                        @Override
-                        public void run() {
-                            closeButton.setEnabled(true);
-                            final String url = link.getLink().toString();
-                            String uploadText = I18N.getMessage("uploadComplete");
-                            label.setText(String.format("<html>%s <a href=\"%s\">%s</a></html>", uploadText, url, url));
-                            label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                            label.addMouseListener(new MouseAdapter() {
-                                @Override
-                                public void mouseClicked(java.awt.event.MouseEvent e) {
-                                    openInBrowser(url);
-                                }
-                            });
-                        }
-                    });
-                } catch (final PasteException e) {
-                    SwingUtilities.invokeLater(new Runnable() {
-
-                        @Override
-                        public void run() {
-                            closeButton.setEnabled(true);
-                            String uploadFailed = I18N.getMessage("uploadFailed");
-                            label.setText("<html>" + uploadFailed + ":<br/> " + e.getLocalizedMessage() + "</html>");
-                        }
-                    });
-                }
+            public void actionPerformed(ActionEvent e) {
+                StringSelection stringSelection = new StringSelection(linkText.getText());
+                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                clipboard.setContents(stringSelection, null);
             }
-        };
+        });
+        linkPanel.add(copyLinkButton, BorderLayout.EAST);
 
-        Thread thread = new Thread(runnable, "Upload paste");
-        thread.start();
+        add(linkPanel, BorderLayout.SOUTH);
 
-        JDialog dialog = createDialog(label, closeButton, I18N.getMessage("uploadDialog"), JOptionPane.INFORMATION_MESSAGE);
-        dialog.setVisible(true);
-        dialog.dispose();
+    }
+
+    @Override
+    public void setVisible(boolean aFlag) {
+        super.setVisible(aFlag);
+
+        if (!aFlag) {
+            return;
+        }
+
+        firePropertyChange("pageComplete", !pageComplete, pageComplete);
+
+        URL log = uploadedFile.get();
+        String text = log != null ? log.toString() : I18N.getMessage("noUploadLinkText");
+        copyLinkButton.setEnabled(log != null);
+        linkText.setText(text);
+        linkText.setEnabled(log != null);
     }
 
     private static void openInBrowser(String url) {
@@ -164,25 +192,4 @@ public class FinalActionsPanel extends JPanel {
             }
         }
     }
-
-    // This is c&p from CrashReporter
-    private static JDialog createDialog(Component mainPanel, JButton closeButton, String title, int messageType) {
-        Object[] opts = new Object[]{closeButton};
-
-        // The error-message pane
-        final JOptionPane pane = new JOptionPane(mainPanel, messageType, JOptionPane.DEFAULT_OPTION, null, opts, opts[0]);
-        closeButton.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // calling setValue() closes the dialog
-                pane.setValue("CLOSE"); // the actual value doesn't matter
-            }
-        });
-
-        // wrap it all in a dialog
-        JDialog dialog = pane.createDialog(title);
-        return dialog;
-    }
-
 }

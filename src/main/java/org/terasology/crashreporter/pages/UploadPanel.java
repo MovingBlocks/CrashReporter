@@ -28,6 +28,7 @@ import java.awt.event.MouseAdapter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -57,10 +58,13 @@ public class UploadPanel extends JPanel {
 
     private JButton uploadPasteBinButton;
     private String prevUpload;
+    private URL uploadURL;
 
     private JLabel statusLabel;
 
     private Supplier<String> textSupplier;
+
+    private JButton uploadSkipButton;
 
     public UploadPanel(Supplier<String> supplier) {
 
@@ -74,34 +78,38 @@ public class UploadPanel extends JPanel {
         titleLabel.setBorder(new EmptyBorder(10, 0, 0, 0));
         add(titleLabel, BorderLayout.NORTH);
 
+        Font buttonFont = getFont().deriveFont(Font.BOLD).deriveFont(14f);
+
         JPanel hosterPanel = new JPanel(new GridLayout(2, 1, 0, 20));
         hosterPanel.setBorder(new EmptyBorder(0, 50, 0, 50));
         uploadPasteBinButton = new JButton("PasteBin", Resources.loadIcon("icons/pastebin.png"));
         uploadPasteBinButton.setPreferredSize(new Dimension(250, 50));
+        uploadPasteBinButton.setFont(buttonFont);
         hosterPanel.add(uploadPasteBinButton);
 
         uploadPasteBinButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                uploadPasteBinButton.setText(I18N.getMessage("waitForUpload"));
+                statusLabel.setText(I18N.getMessage("waitForUpload"));
                 uploadPasteBinButton.setEnabled(false);
 
                 String text = textSupplier.get();
-                if (!text.equals(prevUpload)) {
-                    upload(text);
-                }
+                upload(text);
             }
         });
         hosterPanel.add(uploadPasteBinButton);
 
-        JButton uploadSkipButton = new JButton(I18N.getMessage("skipUpload"), Resources.loadIcon("icons/Actions-edit-delete-icon.png"));
+        uploadSkipButton = new JButton(I18N.getMessage("skipUpload"), Resources.loadIcon("icons/Actions-edit-delete-icon.png"));
         uploadSkipButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 uploadSkipButton.setEnabled(false);
-
+                UploadPanel.this.firePropertyChange("pageComplete", Boolean.FALSE, Boolean.TRUE);
+                String text = textSupplier.get();
+                prevUpload = text;
             }
         });
+        uploadSkipButton.setFont(buttonFont);
         hosterPanel.add(uploadSkipButton);
 
         add(hosterPanel, BorderLayout.CENTER);
@@ -110,15 +118,26 @@ public class UploadPanel extends JPanel {
 
     @Override
     public void setVisible(boolean aFlag) {
-
         super.setVisible(aFlag);
 
         if (!aFlag) {
             return;
         }
 
+        if (prevUpload == null) {
+            firePropertyChange("pageComplete", Boolean.TRUE, Boolean.FALSE);
+        }
+
         String text = textSupplier.get();
-        uploadPasteBinButton.setEnabled(text != null && !text.isEmpty() && !text.equals(prevUpload));
+        boolean canUpload = text != null && !text.isEmpty() && (!text.equals(prevUpload) || uploadURL == null);
+        uploadPasteBinButton.setEnabled(canUpload);
+    }
+
+    /**
+     * @return the URL of the log file that was uploaded or <code>null</code>
+     */
+    public URL getUploadedFileURL() {
+        return uploadURL;
     }
 
     private void upload(String content) {
@@ -159,18 +178,20 @@ public class UploadPanel extends JPanel {
     }
 
     private void uploadSuccess(PastebinLink link, String content) {
-        final String url = link.getLink().toString();
+        final URL url = link.getLink();
         String uploadText = I18N.getMessage("uploadComplete");
         statusLabel.setText(String.format("<html>%s <a href=\"%s\">%s</a></html>", uploadText, url, url));
         statusLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         statusLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                openInBrowser(url);
+                openInBrowser(url.toString());
             }
         });
 
         prevUpload = content;
+        uploadURL = url;
+        uploadSkipButton.setEnabled(false);
     }
 
     private void uploadFailed(Exception e) {

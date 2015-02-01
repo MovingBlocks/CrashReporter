@@ -17,7 +17,6 @@
 package org.terasology.crashreporter.pages;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -58,7 +57,6 @@ public class ErrorMessagePanel extends JPanel {
         Icon titleIcon = Resources.loadIcon("icons/Actions-dialog-close-icon.png");
         String htmlText = "<html><h3>" + firstLine + "</h3>" + text + "</html>";
         JLabel message = new JLabel(htmlText, titleIcon, SwingConstants.LEFT);
-        mainPanel.setPreferredSize(new Dimension(750, 450));
 
         mainPanel.add(message, BorderLayout.NORTH);
 
@@ -69,7 +67,6 @@ public class ErrorMessagePanel extends JPanel {
         // do not use exception.getStackTrace(), because it does
         // not contain suppressed exception or causes
 
-        // StackTrace tab
         JTextArea stackTraceArea = new JTextArea();
         stackTraceArea.setText(stacktrace);
         stackTraceArea.setEditable(false);

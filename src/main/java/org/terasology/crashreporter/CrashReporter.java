@@ -18,13 +18,8 @@ package org.terasology.crashreporter;
 
 import java.awt.Dialog;
 import java.awt.Dimension;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 import javax.swing.JDialog;
 import javax.swing.LookAndFeel;
@@ -86,7 +81,7 @@ public final class CrashReporter {
         JDialog dialog = new JDialog((Dialog) null, dialogTitle, true);
         dialog.setIconImage(Resources.loadImage("icons/server.png"));
         dialog.setContentPane(panel);
-        dialog.setMinimumSize(new Dimension(550, 350));
+        dialog.setMinimumSize(new Dimension(600, 400));
         dialog.setLocationRelativeTo(null);
         dialog.setResizable(true);      // disabled by default
         dialog.setVisible(true);

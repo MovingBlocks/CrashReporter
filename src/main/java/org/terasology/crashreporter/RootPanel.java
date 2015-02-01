@@ -27,6 +27,7 @@ import java.awt.event.WindowEvent;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.net.URL;
 
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
@@ -70,13 +71,20 @@ public class RootPanel extends JPanel {
         LogViewPanel logViewPanel = new LogViewPanel(logFile);
         pages.add(new ErrorMessagePanel(exception));
         pages.add(logViewPanel);
-        pages.add(new UploadPanel(new Supplier<String>() {
+        UploadPanel uploadPanel = new UploadPanel(new Supplier<String>() {
             @Override
             public String get() {
                     return logViewPanel.getLog();
                 }
-            }));
-        pages.add(new FinalActionsPanel());
+            });
+        pages.add(uploadPanel);
+        pages.add(new FinalActionsPanel(new Supplier<URL>() {
+
+            @Override
+            public URL get() {
+                return uploadPanel.getUploadedFileURL();
+            }
+        }));
 
         JPanel mainPanel = new JPanel();
         RXCardLayout cards = new RXCardLayout(5, 5);
@@ -100,6 +108,10 @@ public class RootPanel extends JPanel {
         JButton prevButton = new JButton(I18N.getMessage("prev"), prevIcon);
         JButton nextButton = new JButton(I18N.getMessage("next"), nextIcon);
 
+        for (JComponent page : pages) {
+            page.addPropertyChangeListener("pageComplete", new PageCompleteListener(nextButton));
+        }
+
         prevButton.setFont(buttonFont);
         prevButton.setHorizontalAlignment(SwingConstants.LEFT);
         prevButton.setEnabled(false);
@@ -108,6 +120,9 @@ public class RootPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (cards.isPreviousCardAvailable()) {
+                    // enable the "next" button before showing the page
+                    // allows it to disable it again before becoming visible
+                    nextButton.setEnabled(true);
                     cards.previous(mainPanel);
                     prevButton.setEnabled(cards.isPreviousCardAvailable());
                     nextButton.setText(I18N.getMessage("next"));
