@@ -19,6 +19,10 @@ package org.terasology.crashreporter.pages;
 import java.awt.BorderLayout;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 
 import javax.swing.Icon;
 import javax.swing.JLabel;
@@ -35,43 +39,81 @@ import org.terasology.crashreporter.Resources;
  * @author Martin Steiger
  */
 public class ErrorMessagePanel extends JPanel {
+
     private static final long serialVersionUID = 8449689452512733452L;
+
+    private final JTextArea logArea;
 
     /**
      * @param exception the exception to display
      */
-    public ErrorMessagePanel(Throwable exception) {
+    public ErrorMessagePanel(Throwable exception, Path logFile) {
 
         JPanel mainPanel = this;
-        mainPanel.setLayout(new BorderLayout(0, 20));
+        mainPanel.setLayout(new BorderLayout(0, 5));
 
-        // Replace newline chars. with html newline elements (not needed in most cases)
         String text = "<b>" + exception.getClass().getSimpleName() + "</b>";
         String exMessage = exception.getLocalizedMessage();
         if (exMessage != null) {
             text += ": " + exMessage;
         }
-
+        // Replace newline chars. with html newline elements (not needed in most cases)
         text = text.replaceAll("\\r?\\n", "<br/>");
+
         String firstLine = I18N.getMessage("firstLine");
         Icon titleIcon = Resources.loadIcon("icons/Actions-dialog-close-icon.png");
+
         String htmlText = "<html><h3>" + firstLine + "</h3>" + text + "</html>";
         JLabel message = new JLabel(htmlText, titleIcon, SwingConstants.LEFT);
 
         mainPanel.add(message, BorderLayout.NORTH);
 
-        // convert exception stacktrace to string
-        StringWriter sw = new StringWriter();
-        exception.printStackTrace(new PrintWriter(sw));
-        String stacktrace = sw.toString();
-        // do not use exception.getStackTrace(), because it does
-        // not contain suppressed exception or causes
+        final String logFileContent = readLogFileContent(logFile);
+        logArea = new JTextArea();
+        logArea.setText(logFileContent);
+        add(new JScrollPane(logArea), BorderLayout.CENTER);
 
-        JTextArea stackTraceArea = new JTextArea();
-        stackTraceArea.setText(stacktrace);
-        stackTraceArea.setEditable(false);
-        stackTraceArea.setCaretPosition(0);
-        add(new JScrollPane(stackTraceArea), BorderLayout.CENTER);
+        String readablePath = logFile.toAbsolutePath().normalize().toString();
+        String loc = I18N.getMessage("fileLocation") + ": " + readablePath;
+
+        String editMessage = I18N.getMessage("editBeforeUpload");
+
+        // mark the text before ":" in bold - English NOTE:
+        int idx = editMessage.indexOf(':');
+        if (idx > 0) {
+            editMessage = "<b>" + editMessage.substring(0, idx) + "</b>" + editMessage.substring(idx);
+        }
+        JLabel editHintLabel = new JLabel("<html>" + loc + "<br/><br/>" + editMessage + "</html>");
+        add(editHintLabel, BorderLayout.SOUTH);
     }
 
+    /**
+     * @return the (edited) log file contents
+     */
+    public String getLog() {
+        return logArea.getText();
+    }
+
+    private static String readLogFileContent(Path logFile) {
+        StringBuilder builder = new StringBuilder();
+
+        if (logFile != null) {
+            try {
+                List<String> lines = Files.readAllLines(logFile, Charset.defaultCharset());
+                for (String line : lines) {
+                    builder.append(line);
+                    builder.append(System.lineSeparator());
+                }
+            } catch (Exception e) { // we catch all here, because we want to continue execution in all cases
+                e.printStackTrace(System.err);
+
+                StringWriter sw = new StringWriter();
+                builder.append("Could not open log file " + logFile.toString() + System.lineSeparator());
+                e.printStackTrace(new PrintWriter(sw));
+                builder.append(sw.toString());
+            }
+        }
+
+        return builder.toString();
+    }
 }

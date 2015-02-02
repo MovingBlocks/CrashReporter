@@ -41,7 +41,6 @@ import javax.swing.border.MatteBorder;
 
 import org.terasology.crashreporter.pages.ErrorMessagePanel;
 import org.terasology.crashreporter.pages.FinalActionsPanel;
-import org.terasology.crashreporter.pages.LogViewPanel;
 import org.terasology.crashreporter.pages.UploadPanel;
 import org.terasology.gui.JImage;
 import org.terasology.gui.RXCardLayout;
@@ -66,15 +65,14 @@ public class RootPanel extends JPanel {
         final Icon prevIcon = Resources.loadIcon("icons/Arrow-Prev-icon.png");
         final Icon nextIcon = Resources.loadIcon("icons/Arrow-Next-icon.png");
         final Icon closeIcon = Resources.loadIcon("icons/Actions-application-exit-icon.png");
-        
+
         List<JComponent> pages = new ArrayList<>();
-        final LogViewPanel logViewPanel = new LogViewPanel(logFile);
-        pages.add(new ErrorMessagePanel(exception));
-        pages.add(logViewPanel);
+        final ErrorMessagePanel errorMessagePanel = new ErrorMessagePanel(exception, logFile);
+        pages.add(errorMessagePanel);
         final UploadPanel uploadPanel = new UploadPanel(new Supplier<String>() {
             @Override
             public String get() {
-                    return logViewPanel.getLog();
+                    return errorMessagePanel.getLog();
                 }
             });
         pages.add(uploadPanel);
