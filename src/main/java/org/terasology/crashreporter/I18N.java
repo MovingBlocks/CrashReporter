@@ -32,6 +32,10 @@ public final class I18N {
     private I18N() {
     }
 
+    /**
+     * @param key the messsage key
+     * @return the localized message
+     */
     public static String getMessage(String key) {
         Locale locale = Locale.getDefault();
         try {
@@ -42,6 +46,11 @@ public final class I18N {
         }
     }
 
+    /**
+     * @param key the message key
+     * @param arguments a number of arguments that will be inserted according to the string format specifiers
+     * @return the formatted localized text string
+     */
     public static String getMessage(String key, Object ... arguments) {
         Locale locale = Locale.getDefault();
         String pattern;

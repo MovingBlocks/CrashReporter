@@ -22,7 +22,7 @@ import java.beans.PropertyChangeListener;
 import javax.swing.JComponent;
 
 /**
- * TODO Type description
+ * Activates/deactivates the "next" button depending on property changed events.
  * @author Martin Steiger
  */
 class PageCompleteListener implements PropertyChangeListener {
@@ -30,7 +30,7 @@ class PageCompleteListener implements PropertyChangeListener {
     private final JComponent nextButton;
 
     /**
-     * @param nextButton
+     * @param nextButton the "next" button
      */
     public PageCompleteListener(JComponent nextButton) {
         this.nextButton = nextButton;

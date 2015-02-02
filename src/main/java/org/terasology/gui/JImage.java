@@ -33,7 +33,7 @@ public class JImage extends JComponent {
     private BufferedImage image;
 
     /**
-     * @param loadImage
+     * @param image the image to display
      */
     public JImage(BufferedImage image) {
         this.image = image;
