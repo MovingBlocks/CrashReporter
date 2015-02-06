@@ -19,7 +19,6 @@ package org.terasology.crashreporter.pages;
 import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.Desktop;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -29,19 +28,16 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.concurrent.Callable;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 
-import org.jpaste.exceptions.PasteException;
-import org.jpaste.pastebin.PasteExpireDate;
-import org.jpaste.pastebin.Pastebin;
-import org.jpaste.pastebin.PastebinLink;
-import org.jpaste.pastebin.PastebinPaste;
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
 import org.terasology.crashreporter.Supplier;
@@ -54,14 +50,9 @@ public class UploadPanel extends JPanel {
 
     private static final long serialVersionUID = -8247883237201535146L;
 
-    /**
-     * Username Terasology
-     * eMail pastebin@terasology.org
-     */
-    private static final String PASTEBIN_DEVELOPER_KEY = "1ed92217030bd6c2570fac91bcbfee78";
-
     private JButton uploadPasteBinButton;
-    private String prevUpload;
+    private JButton uploadHostedButton;
+    private boolean isComplete;
     private URL uploadURL;
 
     private JLabel statusLabel;
@@ -84,24 +75,44 @@ public class UploadPanel extends JPanel {
 
         Font buttonFont = getFont().deriveFont(Font.BOLD).deriveFont(14f);
 
-        JPanel hosterPanel = new JPanel(new GridLayout(2, 1, 0, 20));
+        JPanel hosterPanel = new JPanel(new GridLayout(0, 1, 0, 20));
         hosterPanel.setBorder(new EmptyBorder(0, 50, 0, 50));
         uploadPasteBinButton = new JButton("PasteBin", Resources.loadIcon("icons/pastebin.png"));
-        uploadPasteBinButton.setPreferredSize(new Dimension(250, 50));
         uploadPasteBinButton.setFont(buttonFont);
-        hosterPanel.add(uploadPasteBinButton);
-
         uploadPasteBinButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 statusLabel.setText(I18N.getMessage("waitForUpload"));
                 uploadPasteBinButton.setEnabled(false);
+                uploadHostedButton.setEnabled(false);
 
                 String text = textSupplier.get();
-                upload(text);
+                upload(new PastebinUploadRunnable(text));
             }
         });
         hosterPanel.add(uploadPasteBinButton);
+
+        uploadHostedButton = new JButton("Terasology Servers", Resources.loadIcon("icons/starry-gooey.png"));
+
+        // ------- ENABLE when Server is ready -----
+        uploadHostedButton.setVisible(false);
+        // ------- ENABLE when Server is ready -----
+
+        uploadHostedButton.setFont(buttonFont);
+        uploadHostedButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                statusLabel.setText(I18N.getMessage("waitForUpload"));
+                uploadHostedButton.setEnabled(false);
+                uploadPasteBinButton.setEnabled(false);
+
+                String text = textSupplier.get();
+//                URI host = URI.create("http://terasology.org/uploadLog");
+                URI host = URI.create("http://localhost:8080/uploadFile");
+                upload(new HostedUploadRunnable(host, text));
+            }
+        });
+        hosterPanel.add(uploadHostedButton);
 
         uploadSkipButton = new JButton(I18N.getMessage("skipUpload"), Resources.loadIcon("icons/Actions-edit-delete-icon.png"));
         uploadSkipButton.addActionListener(new ActionListener() {
@@ -109,8 +120,7 @@ public class UploadPanel extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 uploadSkipButton.setEnabled(false);
                 UploadPanel.this.firePropertyChange("pageComplete", Boolean.FALSE, Boolean.TRUE);
-                String text = textSupplier.get();
-                prevUpload = text;
+                isComplete = true;
             }
         });
         uploadSkipButton.setFont(buttonFont);
@@ -128,13 +138,9 @@ public class UploadPanel extends JPanel {
             return;
         }
 
-        if (prevUpload == null) {
-            firePropertyChange("pageComplete", Boolean.TRUE, Boolean.FALSE);
-        }
+        firePropertyChange("pageComplete", !isComplete, isComplete);
 
-        String text = textSupplier.get();
-        boolean canUpload = text != null && !text.isEmpty() && (!text.equals(prevUpload) || uploadURL == null);
-        uploadPasteBinButton.setEnabled(canUpload);
+//        uploadPasteBinButton.setEnabled(canUpload);
     }
 
     /**
@@ -144,64 +150,72 @@ public class UploadPanel extends JPanel {
         return uploadURL;
     }
 
-    private void upload(final String content) {
-        String title = "Terasology Error Report";
-        final PastebinPaste paste = Pastebin.newPaste(PASTEBIN_DEVELOPER_KEY, content, title);
-        paste.setPasteFormat("apache"); // Apache Log File Format - this is the closest I could find
-        paste.setPasteExpireDate(PasteExpireDate.ONE_MONTH);
-
+    private void upload(Callable<URL> callable) {
         Runnable runnable = new Runnable() {
 
             @Override
             public void run() {
                 try {
-                    final PastebinLink link = paste.paste();
-
-                    SwingUtilities.invokeLater(new Runnable() {
-
-                        @Override
-                        public void run() {
-                            uploadSuccess(link, content);
-                        }
-                    });
-                } catch (final PasteException e) {
-                    SwingUtilities.invokeLater(new Runnable() {
-
-                        @Override
-                        public void run() {
-                            uploadFailed(e);
-                        }
-                    });
+                    URL link = callable.call();
+                    uploadSuccess(link);
+                }
+                catch (Exception e) {
+                    uploadFailed(e);
                 }
             }
         };
 
-        Thread thread = new Thread(runnable, "Upload paste");
-        thread.setName("Upload");
+        Thread thread = new Thread(runnable, "Upload");
         thread.start();
     }
 
-    private void uploadSuccess(PastebinLink link, String content) {
-        final URL url = link.getLink();
-        String uploadText = I18N.getMessage("uploadComplete");
-        statusLabel.setText(String.format("<html>%s <a href=\"%s\">%s</a></html>", uploadText, url, url));
-        statusLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        statusLabel.addMouseListener(new MouseAdapter() {
+    private void updateStatus()
+    {
+        if (uploadURL != null) {
+            String uploadText = I18N.getMessage("uploadComplete");
+            statusLabel.setText(String.format("<html>%s <a href=\"%s\">%s</a></html>", uploadText, uploadURL, uploadURL));
+            statusLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            statusLabel.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(java.awt.event.MouseEvent e) {
+                    openInBrowser(uploadURL.toString());
+                }
+            });
+        }
+        else
+        {
+            statusLabel.setText(I18N.getMessage("noUpload"));
+        }
+    }
+
+    private void uploadSuccess(URL link) {
+        SwingUtilities.invokeLater(new Runnable() {
+
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
-                openInBrowser(url.toString());
+            public void run() {
+                uploadURL = link;
+                updateStatus();
+                uploadSkipButton.setEnabled(false);
+                uploadHostedButton.setEnabled(true);
+                uploadPasteBinButton.setEnabled(true);
+                firePropertyChange("pageComplete", Boolean.FALSE, Boolean.TRUE);
+                isComplete = true;
             }
         });
-
-        prevUpload = content;
-        uploadURL = url;
-        uploadSkipButton.setEnabled(false);
-        firePropertyChange("pageComplete", Boolean.FALSE, Boolean.TRUE);
     }
 
     private void uploadFailed(Exception e) {
-        String uploadFailed = I18N.getMessage("uploadFailed");
-        statusLabel.setText("<html>" + uploadFailed + ":<br/> " + e.getLocalizedMessage() + "</html>");
+        SwingUtilities.invokeLater(new Runnable() {
+
+            @Override
+            public void run() {
+                String uploadFailed = I18N.getMessage("uploadFailed");
+                JOptionPane.showMessageDialog(null, e.getLocalizedMessage(), uploadFailed, JOptionPane.ERROR_MESSAGE);
+                uploadHostedButton.setEnabled(true);
+                uploadPasteBinButton.setEnabled(true);
+                updateStatus();
+            }
+        });
     }
 
     private static void openInBrowser(String url) {
