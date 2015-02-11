@@ -158,8 +158,7 @@ public class UploadPanel extends JPanel {
                 try {
                     URL link = callable.call();
                     uploadSuccess(link);
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     uploadFailed(e);
                 }
             }
@@ -169,8 +168,7 @@ public class UploadPanel extends JPanel {
         thread.start();
     }
 
-    private void updateStatus()
-    {
+    private void updateStatus() {
         if (uploadURL != null) {
             String uploadText = I18N.getMessage("uploadComplete");
             statusLabel.setText(String.format("<html>%s <a href=\"%s\">%s</a></html>", uploadText, uploadURL, uploadURL));
@@ -181,9 +179,7 @@ public class UploadPanel extends JPanel {
                     openInBrowser(uploadURL.toString());
                 }
             });
-        }
-        else
-        {
+        } else {
             statusLabel.setText(I18N.getMessage("noUpload"));
         }
     }
