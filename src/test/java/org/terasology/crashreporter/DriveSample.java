@@ -16,12 +16,18 @@
 
 package org.terasology.crashreporter;
 
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.security.GeneralSecurityException;
+import java.security.KeyStoreException;
+import java.security.PrivateKey;
 import java.util.Collections;
 
 import com.google.api.client.auth.oauth2.Credential;
@@ -35,6 +41,7 @@ import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.SecurityUtils;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.Drive.Files.List;
 import com.google.api.services.drive.DriveScopes;
@@ -73,37 +80,30 @@ public class DriveSample {
   /** Global Drive API client. */
   private static Drive drive;
 
-//  private key secret: notasecret
-
   private static Credential authorize() throws GeneralSecurityException, IOException, URISyntaxException {
         JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
 
-        java.io.File keyFile = getPrivateKey();
+        PrivateKey serviceAccountPrivateKey = getPrivateKey();
 
         GoogleCredential credential = new GoogleCredential.Builder().setTransport(httpTransport)
                 .setJsonFactory(jsonFactory)
-//                .setServiceAccountId("255915530003-n0lls505djp8n5v7bs34qvoibpfhvv63@developer.gserviceaccount.com")
                 .setServiceAccountId("454164381957-9fnum5600ia5bp94jgkmbrrlhicjb1vo@developer.gserviceaccount.com")
                 .setServiceAccountScopes(Collections.singleton(DriveScopes.DRIVE))
-                .setServiceAccountPrivateKeyFromP12File(keyFile)
+                .setServiceAccountPrivateKey(serviceAccountPrivateKey)
                 .build();
+
         return credential;
   }
 
-    /**
-    * @return
-    * @throws URISyntaxException
-    */
-    private static java.io.File getPrivateKey() throws URISyntaxException {
-        //    URL website = new URL("http://www.website.com/information.asp");
-        //    ReadableByteChannel rbc = Channels.newChannel(website.openStream());
-        //    try (FileOutputStream fos = new FileOutputStream("information.html")) {
-        //        fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-        //    }
-        URL resource = DriveSample.class.getResource("/GooeyDrive-24506b2f1f34.p12");
-        java.io.File keyFile = new java.io.File(resource.toURI());
+    private static PrivateKey getPrivateKey() throws IOException, GeneralSecurityException {
+        URL website = new URL("http://jenkins.terasology.org/userContent/GooeyDrive-24506b2f1f34.p12");
 
-        return keyFile;
+        try (InputStream keyStream = website.openStream()) {
+            return SecurityUtils.loadPrivateKeyFromKeyStore(
+                    SecurityUtils.getPkcs12KeyStore(),
+                    keyStream, "notasecret",
+                    "privatekey", "notasecret");
+        }
     }
 
     public static void main(String[] args) {
