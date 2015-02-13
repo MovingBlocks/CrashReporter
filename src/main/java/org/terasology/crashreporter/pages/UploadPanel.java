@@ -51,7 +51,7 @@ public class UploadPanel extends JPanel {
     private static final long serialVersionUID = -8247883237201535146L;
 
     private JButton uploadPasteBinButton;
-    private JButton uploadHostedButton;
+    private JButton uploadGDriveButton;
     private boolean isComplete;
     private URL uploadURL;
 
@@ -84,7 +84,7 @@ public class UploadPanel extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 statusLabel.setText(I18N.getMessage("waitForUpload"));
                 uploadPasteBinButton.setEnabled(false);
-                uploadHostedButton.setEnabled(false);
+                uploadGDriveButton.setEnabled(false);
 
                 String text = textSupplier.get();
                 upload(new PastebinUploadRunnable(text));
@@ -92,27 +92,20 @@ public class UploadPanel extends JPanel {
         });
         hosterPanel.add(uploadPasteBinButton);
 
-        uploadHostedButton = new JButton("Terasology Servers", Resources.loadIcon("icons/starry-gooey.png"));
-
-        // ------- ENABLE when Server is ready -----
-        uploadHostedButton.setVisible(false);
-        // ------- ENABLE when Server is ready -----
-
-        uploadHostedButton.setFont(buttonFont);
-        uploadHostedButton.addActionListener(new ActionListener() {
+        uploadGDriveButton = new JButton("Google Drive", Resources.loadIcon("icons/Google_Drive_icon.png"));
+        uploadGDriveButton.setFont(buttonFont);
+        uploadGDriveButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 statusLabel.setText(I18N.getMessage("waitForUpload"));
-                uploadHostedButton.setEnabled(false);
+                uploadGDriveButton.setEnabled(false);
                 uploadPasteBinButton.setEnabled(false);
 
                 String text = textSupplier.get();
-//                URI host = URI.create("http://terasology.org/uploadLog");
-                URI host = URI.create("http://localhost:8080/uploadFile");
-                upload(new HostedUploadRunnable(host, text));
+                upload(new GDriveUploadRunnable(text));
             }
         });
-        hosterPanel.add(uploadHostedButton);
+        hosterPanel.add(uploadGDriveButton);
 
         uploadSkipButton = new JButton(I18N.getMessage("skipUpload"), Resources.loadIcon("icons/Actions-edit-delete-icon.png"));
         uploadSkipButton.addActionListener(new ActionListener() {
@@ -192,7 +185,7 @@ public class UploadPanel extends JPanel {
                 uploadURL = link;
                 updateStatus();
                 uploadSkipButton.setEnabled(false);
-                uploadHostedButton.setEnabled(true);
+                uploadGDriveButton.setEnabled(true);
                 uploadPasteBinButton.setEnabled(true);
                 firePropertyChange("pageComplete", Boolean.FALSE, Boolean.TRUE);
                 isComplete = true;
@@ -207,7 +200,7 @@ public class UploadPanel extends JPanel {
             public void run() {
                 String uploadFailed = I18N.getMessage("uploadFailed");
                 JOptionPane.showMessageDialog(null, e.getLocalizedMessage(), uploadFailed, JOptionPane.ERROR_MESSAGE);
-                uploadHostedButton.setEnabled(true);
+                uploadGDriveButton.setEnabled(true);
                 uploadPasteBinButton.setEnabled(true);
                 updateStatus();
             }
