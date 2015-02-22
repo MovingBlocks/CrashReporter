@@ -143,7 +143,7 @@ public class UploadPanel extends JPanel {
         return uploadURL;
     }
 
-    private void upload(Callable<URL> callable) {
+    private void upload(final Callable<URL> callable) {
         Runnable runnable = new Runnable() {
 
             @Override
@@ -177,7 +177,7 @@ public class UploadPanel extends JPanel {
         }
     }
 
-    private void uploadSuccess(URL link) {
+    private void uploadSuccess(final URL link) {
         SwingUtilities.invokeLater(new Runnable() {
 
             @Override
@@ -193,7 +193,7 @@ public class UploadPanel extends JPanel {
         });
     }
 
-    private void uploadFailed(Exception e) {
+    private void uploadFailed(final Exception e) {
         SwingUtilities.invokeLater(new Runnable() {
 
             @Override
