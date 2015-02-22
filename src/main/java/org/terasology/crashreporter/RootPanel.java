@@ -55,9 +55,9 @@ public class RootPanel extends JPanel {
 
     /**
      * @param exception the exception that occurred
-     * @param logFile the log file or <code>null</code>
+     * @param logFolderFile the log file or <code>null</code>
      */
-    public RootPanel(Throwable exception, Path logFile) {
+    public RootPanel(Throwable exception, Path logFolderFile) {
 
         setLayout(new BorderLayout());
         Font buttonFont = getFont().deriveFont(Font.BOLD, 14f);
@@ -67,14 +67,19 @@ public class RootPanel extends JPanel {
         final Icon closeIcon = Resources.loadIcon("icons/Actions-application-exit-icon.png");
 
         List<JComponent> pages = new ArrayList<>();
-        final ErrorMessagePanel errorMessagePanel = new ErrorMessagePanel(exception, logFile);
+        final ErrorMessagePanel errorMessagePanel = new ErrorMessagePanel(exception, logFolderFile);
         pages.add(errorMessagePanel);
         final UploadPanel uploadPanel = new UploadPanel(new Supplier<String>() {
             @Override
             public String get() {
                     return errorMessagePanel.getLog();
                 }
-            });
+            }, new Supplier<String>() {
+                @Override
+                public String get() {
+                        return errorMessagePanel.getLogFile().toString();
+                    }
+                });
         pages.add(uploadPanel);
         pages.add(new FinalActionsPanel(new Supplier<URL>() {
 

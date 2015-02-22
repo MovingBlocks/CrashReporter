@@ -17,22 +17,30 @@
 package org.terasology.crashreporter.pages;
 
 import java.awt.BorderLayout;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.util.Collection;
 import java.util.List;
+import java.nio.file.attribute.BasicFileAttributes;
 
 import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
+
+import com.google.common.collect.Lists;
 
 /**
  * Shows the error message plus stack trace
@@ -42,12 +50,14 @@ public class ErrorMessagePanel extends JPanel {
 
     private static final long serialVersionUID = 8449689452512733452L;
 
-    private final JTextArea logArea;
+    private final JTabbedPane tabPane;
+    private final List<JTextArea> textAreas = Lists.newArrayList();
+    private final List<Path> logFiles = Lists.newArrayList();
 
     /**
      * @param exception the exception to display
      */
-    public ErrorMessagePanel(Throwable exception, Path logFile) {
+    public ErrorMessagePanel(Throwable exception, Path logFileFolder) {
 
         JPanel mainPanel = this;
         mainPanel.setLayout(new BorderLayout(0, 5));
@@ -68,12 +78,19 @@ public class ErrorMessagePanel extends JPanel {
 
         mainPanel.add(message, BorderLayout.NORTH);
 
-        final String logFileContent = readLogFileContent(logFile);
-        logArea = new JTextArea();
-        logArea.setText(logFileContent);
-        add(new JScrollPane(logArea), BorderLayout.CENTER);
+        tabPane = new JTabbedPane();
+        for (Path logFile : findLogs(logFileFolder)) {
+            final String logFileContent = readLogFileContent(logFile);
+            JTextArea logArea = new JTextArea();
+            logArea.setText(logFileContent);
+            String tabName = logFileFolder.relativize(logFile).toString();
+            tabPane.addTab(tabName, new JScrollPane(logArea));
+            textAreas.add(logArea);
+            logFiles.add(logFile);
+        }
+        add(tabPane, BorderLayout.CENTER);
 
-        String readablePath = logFile.toAbsolutePath().normalize().toString();
+        String readablePath = logFileFolder.toAbsolutePath().normalize().toString();
         String loc = I18N.getMessage("fileLocation") + ": " + readablePath;
 
         String editMessage = I18N.getMessage("editBeforeUpload");
@@ -88,10 +105,47 @@ public class ErrorMessagePanel extends JPanel {
     }
 
     /**
+     * @param logFileFolder
+     * @return
+     */
+    private Collection<Path> findLogs(Path logFileFolder) {
+        // JAVA8: this should work, too
+        // Files.walk(logFileFolder).filter(path -> path.toString().endsWith(".log")).collect(Collectors.toList());
+
+        final List<Path> results = Lists.newArrayList();
+        try {
+            Files.walkFileTree(logFileFolder, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+
+                    if (file.toString().endsWith(".log")) {
+                        results.add(file);
+                    }
+
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return results;
+    }
+
+    /**
      * @return the (edited) log file contents
      */
     public String getLog() {
-        return logArea.getText();
+        int idx = tabPane.getSelectedIndex();
+        return idx >= 0 ? textAreas.get(idx).getText() : "";
+    }
+
+    /**
+     * @return the original log file
+     */
+    public Path getLogFile() {
+        int idx = tabPane.getSelectedIndex();
+        return idx >= 0 ? logFiles.get(idx) : null;
     }
 
     private static String readLogFileContent(Path logFile) {

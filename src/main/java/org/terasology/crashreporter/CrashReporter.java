@@ -40,9 +40,9 @@ public final class CrashReporter {
 
     /**
      * @param t the exception
-     * @param logFile the log file path or <code>null</code>
+     * @param logFileFolder the log file folder or <code>null</code>
      */
-    public static void report(final Throwable t, final Path logFile) {
+    public static void report(final Throwable t, final Path logFileFolder) {
 
         // Swing element methods must be called in the swing thread
         try {
@@ -56,7 +56,7 @@ public final class CrashReporter {
                     } catch (Exception e) {
                         e.printStackTrace(System.err);
                     }
-                    showModalDialog(t, logFile);
+                    showModalDialog(t, logFileFolder);
                     try {
                         UIManager.setLookAndFeel(oldLaF);
                     } catch (Exception e) {
@@ -69,7 +69,7 @@ public final class CrashReporter {
         }
     }
 
-    protected static void showModalDialog(Throwable t, Path logFile) {
+    protected static void showModalDialog(Throwable t, Path logFolder) {
         String dialogTitle = I18N.getMessage("dialogTitle");
         String version = Resources.getVersion();
 
@@ -77,7 +77,7 @@ public final class CrashReporter {
             dialogTitle += " " + version;
         }
 
-        RootPanel panel = new RootPanel(t, logFile);
+        RootPanel panel = new RootPanel(t, logFolder);
         JDialog dialog = new JDialog((Dialog) null, dialogTitle, true);
         dialog.setIconImage(Resources.loadImage("icons/server.png"));
         dialog.setContentPane(panel);

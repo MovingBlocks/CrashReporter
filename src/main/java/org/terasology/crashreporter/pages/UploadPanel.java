@@ -57,19 +57,23 @@ public class UploadPanel extends JPanel {
 
     private JLabel statusLabel;
 
-    private Supplier<String> textSupplier;
+    private final Supplier<String> textSupplier;
+
+    private final Supplier<String> logFileNameSupplier;
 
     private JButton uploadSkipButton;
 
-    public UploadPanel(Supplier<String> supplier) {
+    private JLabel titleLabel;
 
-        this.textSupplier = supplier;
+    public UploadPanel(Supplier<String> logFileTextSupp, Supplier<String> logFileNameSupp) {
+
+        this.textSupplier = logFileTextSupp;
+        this.logFileNameSupplier = logFileNameSupp;
         setLayout(new BorderLayout(50, 20));
         statusLabel = new JLabel(I18N.getMessage("noUpload"), SwingConstants.RIGHT);
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.BOLD));
         statusLabel.setBorder(new EmptyBorder(0, 5, 0, 5));
-        String title = "<html><h3>" + I18N.getMessage("uploadLog2") + "</h></html>";
-        JLabel titleLabel = new JLabel(title, Resources.loadIcon("icons/Arrow-up-icon.png"), SwingConstants.CENTER);
+        titleLabel = new JLabel(Resources.loadIcon("icons/Arrow-up-icon.png"), SwingConstants.CENTER);
         titleLabel.setBorder(new EmptyBorder(10, 0, 0, 0));
         add(titleLabel, BorderLayout.NORTH);
 
@@ -133,7 +137,8 @@ public class UploadPanel extends JPanel {
 
         firePropertyChange("pageComplete", !isComplete, isComplete);
 
-//        uploadPasteBinButton.setEnabled(canUpload);
+        String fname = logFileNameSupplier.get();
+        titleLabel.setText("<html><h3>" + I18N.getMessage("uploadLog2") + "</h3>" + fname + "</html>");
     }
 
     /**
