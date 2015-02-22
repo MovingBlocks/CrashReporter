@@ -160,6 +160,9 @@ public class RootPanel extends JPanel {
         buttonPanel.add(nextButton);
 
         add(buttonPanel, BorderLayout.SOUTH);
+
+        // this triggers the visiblity updates for the first page
+        pages.get(0).setVisible(true);
     }
 
 }

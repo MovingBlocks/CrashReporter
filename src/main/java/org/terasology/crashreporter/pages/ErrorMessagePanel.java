@@ -17,18 +17,22 @@
 package org.terasology.crashreporter.pages;
 
 import java.awt.BorderLayout;
+import java.awt.Font;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.nio.file.attribute.BasicFileAttributes;
 
+import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -52,7 +56,7 @@ public class ErrorMessagePanel extends JPanel {
 
     private final JTabbedPane tabPane;
     private final List<JTextArea> textAreas = Lists.newArrayList();
-    private final List<Path> logFiles = Lists.newArrayList();
+    private final List<Path> logFiles;
 
     /**
      * @param exception the exception to display
@@ -78,19 +82,30 @@ public class ErrorMessagePanel extends JPanel {
 
         mainPanel.add(message, BorderLayout.NORTH);
 
+        logFiles = findLogs(logFileFolder);
         tabPane = new JTabbedPane();
-        for (Path logFile : findLogs(logFileFolder)) {
-            final String logFileContent = readLogFileContent(logFile);
-            JTextArea logArea = new JTextArea();
-            logArea.setText(logFileContent);
-            String tabName = logFileFolder.relativize(logFile).toString();
-            tabPane.addTab(tabName, new JScrollPane(logArea));
-            textAreas.add(logArea);
-            logFiles.add(logFile);
-        }
-        add(tabPane, BorderLayout.CENTER);
 
-        String readablePath = logFileFolder.toAbsolutePath().normalize().toString();
+        if (!logFiles.isEmpty()) {
+            for (Path logFile : logFiles) {
+                final String logFileContent = readLogFileContent(logFile);
+                JTextArea logArea = new JTextArea();
+                logArea.setText(logFileContent);
+                String tabName = logFileFolder.relativize(logFile).toString();
+                tabPane.addTab(tabName, new JScrollPane(logArea));
+                textAreas.add(logArea);
+            }
+            add(tabPane, BorderLayout.CENTER);
+        } else {
+            JLabel missingFilesLabel = new JLabel(I18N.getMessage("noLogFiles"), SwingConstants.CENTER);
+            missingFilesLabel.setFont(missingFilesLabel.getFont().deriveFont(Font.BOLD, 14f));
+            missingFilesLabel.setBorder(BorderFactory.createEtchedBorder());
+            add(missingFilesLabel, BorderLayout.CENTER);
+        }
+
+        String readablePath = logFileFolder != null
+                ? logFileFolder.toAbsolutePath().normalize().toString()
+                : I18N.getMessage("notSpecified");
+
         String loc = I18N.getMessage("fileLocation") + ": " + readablePath;
 
         String editMessage = I18N.getMessage("editBeforeUpload");
@@ -104,29 +119,48 @@ public class ErrorMessagePanel extends JPanel {
         add(editHintLabel, BorderLayout.SOUTH);
     }
 
+    @Override
+    public void setVisible(boolean aFlag) {
+        super.setVisible(aFlag);
+
+        if (!aFlag) {
+            return;
+        }
+
+        if (logFiles.isEmpty()) {
+            firePropertyChange("pageComplete", true, false);
+        }
+    }
+
     /**
      * @param logFileFolder
      * @return
      */
-    private Collection<Path> findLogs(Path logFileFolder) {
+    private List<Path> findLogs(Path logFileFolder) {
         // JAVA8: this should work, too
         // Files.walk(logFileFolder).filter(path -> path.toString().endsWith(".log")).collect(Collectors.toList());
 
         final List<Path> results = Lists.newArrayList();
-        try {
-            Files.walkFileTree(logFileFolder, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 
-                    if (file.toString().endsWith(".log")) {
-                        results.add(file);
-                    }
+        SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 
-                    return FileVisitResult.CONTINUE;
+                if (file.toString().endsWith(".log")) {
+                    results.add(file);
                 }
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
+
+                return FileVisitResult.CONTINUE;
+            }
+        };
+
+        if (logFileFolder != null) {
+            try {
+                // maxDepth == 1 means that only the current folder is searched
+                Files.walkFileTree(logFileFolder, EnumSet.noneOf(FileVisitOption.class), 2, visitor);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         return results;
