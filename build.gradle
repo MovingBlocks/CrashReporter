@@ -1,3 +1,7 @@
+plugins {
+    id "org.standardout.versioneye" version "1.0.1"
+}
+
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'eclipse'
@@ -21,18 +25,29 @@ repositories {
     }
 }
 
+configurations {
+    codeMetrics
+}
+
 dependencies {
+
+    codeMetrics(group: 'org.terasology.config', name: 'codemetrics', version: '1.0.0', ext: 'zip')
+
+    checkstyle ('com.puppycrawl.tools:checkstyle:6.5')
+    pmd ('net.sourceforge.pmd:pmd-core:5.3.1')
+    pmd ('net.sourceforge.pmd:pmd-java:5.3.1')
+
 	compile group: 'brianbb', name: 'jpastebin', version: '1.0.0'
-	compile group: 'org.apache.httpcomponents', name: 'httpcomponents-client', version: '4.4'
-	compile group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.4'
+	compile group: 'org.apache.httpcomponents', name: 'httpcomponents-client', version: '4.4.1'
+	compile group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.4.1'
 	
-    testCompile group: 'junit', name: 'junit', version: '4.11'
-    testCompile group: 'org.mockito', name: 'mockito-all', version: '1.9.5'
-	testCompile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.7'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile group: 'org.mockito', name: 'mockito-all', version: '1.10.19'
+	testCompile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.12'
 	
-	testRuntime group: 'ch.qos.logback', name: 'logback-classic', version: '1.1.2'
+	testRuntime group: 'ch.qos.logback', name: 'logback-classic', version: '1.1.3'
 	
-	compile 'com.google.apis:google-api-services-drive:v2-rev160-1.19.1'
+	compile 'com.google.apis:google-api-services-drive:v2-rev168-1.20.0'
 	//compile 'com.google.oauth-client:google-oauth-client-java6:1.19.0'
 	//compile 'com.google.oauth-client:google-oauth-client-jetty:1.19.0'
 }
@@ -91,18 +106,32 @@ artifacts {
     archives javadocJar
 }
 
+configure([checkstyleMain, checkstyleTest]) { 
+    doFirst {
+        def suppressions = resources.text.fromArchiveEntry(configurations.codeMetrics, "checkstyle/suppressions.xml")
+        // the asFile() method extracts the file from the zip archive and puts it next to checkstyle.xml
+        // this procedure should not be done in the config phase, since the clean task would erase the file before it can be used
+        suppressions.asFile()
+    }
+}
+
 checkstyle {
     ignoreFailures = true
-    configProperties.samedir = checkstyle.configFile.parentFile
+    config = resources.text.fromArchiveEntry(configurations.codeMetrics, "checkstyle/checkstyle.xml")
+    // this assigns the property variable ${samedir} in checkstyle.xml
+    configProperties.samedir = config.asFile().parent	
 }
 
 pmd {
     ignoreFailures = true
-    ruleSetFiles = files("config/pmd/pmd.xml")
+    ruleSetConfig = resources.text.fromArchiveEntry(configurations.codeMetrics, "pmd/pmd.xml")
+    ruleSets = []
 }
 
 findbugs {
     ignoreFailures = true
     effort = 'max'
     reportLevel = 'medium'
+	toolVersion = '3.0.1'
+	excludeFilterConfig = resources.text.fromArchiveEntry(configurations.codeMetrics, "findbugs/findbugs-exclude.xml")
 }
