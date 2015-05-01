@@ -17,7 +17,7 @@ group = 'org.terasology'
 repositories {
     mavenCentral()
     maven {
-        url "http://artifactory.terasology.org:8081/artifactory/repo"
+        url "http://artifactory.terasology.org:8081/artifactory/virtual-repo-live"
     }
 }
 
