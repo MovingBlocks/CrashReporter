@@ -34,26 +34,26 @@ dependencies {
     codeMetrics(group: 'org.terasology.config', name: 'codemetrics', version: '1.0.0', ext: 'zip')
 
     checkstyle ('com.puppycrawl.tools:checkstyle:6.5')
-    pmd ('net.sourceforge.pmd:pmd-core:5.3.1')
-    pmd ('net.sourceforge.pmd:pmd-java:5.3.1')
+    pmd ('net.sourceforge.pmd:pmd-core:5.4.0')
+    pmd ('net.sourceforge.pmd:pmd-java:5.4.0')
 
-	compile group: 'brianbb', name: 'jpastebin', version: '1.0.0'
-	compile group: 'org.apache.httpcomponents', name: 'httpcomponents-client', version: '4.4.1'
-	compile group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.4.1'
-	
+    compile group: 'brianbb', name: 'jpastebin', version: '1.0.0'
+    compile group: 'org.apache.httpcomponents', name: 'httpcomponents-client', version: '4.5.1'
+    compile group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.5.1'
+
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile group: 'org.mockito', name: 'mockito-all', version: '1.10.19'
-	testCompile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.12'
-	
-	testRuntime group: 'ch.qos.logback', name: 'logback-classic', version: '1.1.3'
-	
-	compile 'com.google.apis:google-api-services-drive:v2-rev168-1.20.0'
-	//compile 'com.google.oauth-client:google-oauth-client-java6:1.19.0'
-	//compile 'com.google.oauth-client:google-oauth-client-jetty:1.19.0'
+    testCompile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.13'
+
+    testRuntime group: 'ch.qos.logback', name: 'logback-classic', version: '1.1.3'
+
+    compile 'com.google.apis:google-api-services-drive:v2-rev193-1.20.0'
+    //compile 'com.google.oauth-client:google-oauth-client-java6:1.19.0'
+    //compile 'com.google.oauth-client:google-oauth-client-jetty:1.19.0'
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.3'
+    gradleVersion = '2.9'
 }
 
 def convertGitBranch = { gitBranch ->
@@ -97,7 +97,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 task runInteractiveTest(type: JavaExec, dependsOn: testClasses) {
     main = "org.terasology.crashreporter.InteractiveTestCases"
     classpath = files(sourceSets.test.runtimeClasspath)
-	args = ['setupForExtraLongMessageException', 'src/test/resources/lengthy_logfile.log', 'en-US']
+    args = ['setupForExtraLongMessageException', 'src/test/resources/lengthy_logfile.log', 'en-US']
 }
 
 // Define the artifacts we want to publish (the .pom will also be included since the Maven plugin is active)
@@ -119,7 +119,7 @@ checkstyle {
     ignoreFailures = true
     config = resources.text.fromArchiveEntry(configurations.codeMetrics, "checkstyle/checkstyle.xml")
     // this assigns the property variable ${samedir} in checkstyle.xml
-    configProperties.samedir = config.asFile().parent	
+    configProperties.samedir = config.asFile().parent
 }
 
 pmd {
@@ -132,6 +132,6 @@ findbugs {
     ignoreFailures = true
     effort = 'max'
     reportLevel = 'medium'
-	toolVersion = '3.0.1'
-	excludeFilterConfig = resources.text.fromArchiveEntry(configurations.codeMetrics, "findbugs/findbugs-exclude.xml")
+    toolVersion = '3.0.1'
+    excludeFilterConfig = resources.text.fromArchiveEntry(configurations.codeMetrics, "findbugs/findbugs-exclude.xml")
 }
