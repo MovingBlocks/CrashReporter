@@ -8,5 +8,10 @@
 /bin
 /build
 
+# IntelliJ
+/*.iml
+/*.ipr
+/*.iws
+
 # Log Output
 details.log
