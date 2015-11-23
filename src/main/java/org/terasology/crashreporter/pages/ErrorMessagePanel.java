@@ -138,7 +138,7 @@ public class ErrorMessagePanel extends JPanel {
                 }
             }
 
-        });
+        }.reversed());  // invert sort order
     }
 
     @Override
