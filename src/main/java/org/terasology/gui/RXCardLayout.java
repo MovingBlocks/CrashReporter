@@ -38,8 +38,8 @@ import javax.swing.JComponent;
  * c) Next and Previous Actions
  *
  * This added support will only work when a JComponent is added as a Card.
- * <url>https://tips4java.wordpress.com/2008/10/31/card-layout-focus/</url>
- * @author Rob Camick
+ *
+ * https://tips4java.wordpress.com/2008/10/31/card-layout-focus/
  */
 public class RXCardLayout extends CardLayout implements HierarchyListener {
     private static final long serialVersionUID = 2501916791850952136L;

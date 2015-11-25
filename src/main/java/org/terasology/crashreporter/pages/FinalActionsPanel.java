@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.function.Supplier;
 
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
@@ -42,11 +43,9 @@ import javax.swing.border.EmptyBorder;
 
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
-import org.terasology.crashreporter.Supplier;
 
 /**
  * Lists a few actions before closing the dialog
- * @author Martin Steiger
  */
 public class FinalActionsPanel extends JPanel {
 

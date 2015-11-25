@@ -49,7 +49,6 @@ import com.google.common.collect.Lists;
 
 /**
  * Shows the error message plus stack trace
- * @author Martin Steiger
  */
 public class ErrorMessagePanel extends JPanel {
 
@@ -61,6 +60,7 @@ public class ErrorMessagePanel extends JPanel {
 
     /**
      * @param exception the exception to display
+     * @param logFileFolder the folder that contains the relevant log files
      */
     public ErrorMessagePanel(Throwable exception, Path logFileFolder) {
 

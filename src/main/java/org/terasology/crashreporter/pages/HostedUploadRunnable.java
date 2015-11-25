@@ -34,10 +34,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
-/**
- * @author Martin Steiger
- *
- */
 public class HostedUploadRunnable implements Callable<URL> {
     private final String content;
     private final URI postUri;

@@ -23,7 +23,6 @@ import java.util.ResourceBundle;
 
 /**
  * Internationalization support
- * @author Martin Steiger
  */
 public final class I18N {
 

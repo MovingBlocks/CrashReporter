@@ -27,7 +27,6 @@ import org.jpaste.pastebin.PastebinPaste;
 
 /**
  * Upload the content to PasteBin
- * @author Martin Steiger
  */
 public class PastebinUploadRunnable implements Callable<URL> {
 

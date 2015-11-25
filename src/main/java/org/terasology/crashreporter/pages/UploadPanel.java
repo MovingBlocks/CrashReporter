@@ -29,6 +29,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -40,11 +41,9 @@ import javax.swing.border.EmptyBorder;
 
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
-import org.terasology.crashreporter.Supplier;
 
 /**
  * The panel where the log file content is uploaded to some web storage
- * @author Martin Steiger
  */
 public class UploadPanel extends JPanel {
 

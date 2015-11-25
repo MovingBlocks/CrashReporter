@@ -49,7 +49,7 @@ import com.google.api.services.drive.model.FileList;
 import com.google.api.services.drive.model.Permission;
 
 /**
- * @author Martin Steiger
+ * A connector for Google Drive
  */
 public class GoogleDriveConnector {
 
@@ -85,6 +85,9 @@ public class GoogleDriveConnector {
 
     /**
      * Uploads a file using either resumable or direct media upload.
+     * @param file the file to upload
+     * @param useDirectUpload true for direct media upload, false for resumable uploads
+     * @return the uploaded file
      * @throws IOException if the upload fails
      */
     public File uploadFile(java.io.File file, boolean useDirectUpload) throws IOException {
@@ -95,6 +98,10 @@ public class GoogleDriveConnector {
 
     /**
      * Uploads a file using either resumable or direct media upload.
+     * @param contentStream the file content stream
+     * @param name the filename
+     * @param useDirectUpload true for direct media upload, false for resumable uploads
+     * @return the uploaded file
      * @throws IOException if the upload fails
      */
     public File uploadFile(InputStream contentStream, String name, boolean useDirectUpload) throws IOException {
@@ -106,13 +113,11 @@ public class GoogleDriveConnector {
     /**
      * Set a new permission.
      *
-     * @param service Drive API service instance.
      * @param fileId ID of the file to insert permission for.
      * @param value User or group e-mail address, domain name or {@code null} "default" type.
      * @param type The value "user", "group", "domain" or "anyone".
      * @param role The value "owner", "writer" or "reader".
-     * @return The inserted permission if successful, {@code null} otherwise.
-     * @throws IOException
+     * @throws IOException if the permission could not be set
      */
     public void setPermission(String fileId, String value, String type, String role) throws IOException {
         Permission newPermission = new Permission();
@@ -125,6 +130,10 @@ public class GoogleDriveConnector {
 
     /**
      * Downloads a file using either resumable or direct media download.
+     * @param file the file to download
+     * @param localFolder the local target folder
+     * @param useDirectDownload true for direct media download, false for resumable downloads
+     * @throws IOException if the download fails
      */
     public void downloadToFile(File file, java.io.File localFolder, boolean useDirectDownload) throws IOException {
 
@@ -145,9 +154,8 @@ public class GoogleDriveConnector {
 
     /**
      * Retrieve a list of File resources.
-     *
-     * @param service Drive API service instance.
      * @return List of File resources.
+     * @throws IOException if the directory listing fails
      */
     public List<File> retrieveAllFiles() throws IOException {
       List<File> result = new ArrayList<File>();

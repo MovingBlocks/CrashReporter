@@ -33,7 +33,6 @@ import com.google.api.services.drive.model.File;
 
 /**
  * Upload the content to PasteBin
- * @author Martin Steiger
  */
 public class GDriveUploadRunnable implements Callable<URL> {
 

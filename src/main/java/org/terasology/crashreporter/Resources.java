@@ -34,7 +34,6 @@ import javax.swing.ImageIcon;
 
 /**
  * Provides version info based on a "versionInfo.properties" file.
- * @author Martin Steiger
  */
 public final class Resources {
 

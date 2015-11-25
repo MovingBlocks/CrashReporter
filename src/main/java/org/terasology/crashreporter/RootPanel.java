@@ -27,6 +27,7 @@ import java.awt.event.WindowEvent;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.net.URL;
 
 import javax.swing.BorderFactory;
@@ -47,7 +48,6 @@ import org.terasology.gui.RXCardLayout;
 
 /**
  * The central panel that contains the wizard pages.
- * @author Martin Steiger
  */
 public class RootPanel extends JPanel {
 

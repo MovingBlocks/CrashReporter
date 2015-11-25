@@ -29,8 +29,6 @@ import javax.swing.UIManager;
 /**
  * Displays a detailed error message and provides some options to communicate with devs.
  * Errors are reported to {@link System#err}
- *
- * @author Martin Steiger
  */
 public final class CrashReporter {
 

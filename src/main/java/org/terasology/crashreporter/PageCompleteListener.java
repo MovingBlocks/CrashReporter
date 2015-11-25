@@ -23,7 +23,6 @@ import javax.swing.JComponent;
 
 /**
  * Activates/deactivates the "next" button depending on property changed events.
- * @author Martin Steiger
  */
 class PageCompleteListener implements PropertyChangeListener {
 

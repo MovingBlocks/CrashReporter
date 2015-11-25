@@ -24,7 +24,6 @@ import javax.swing.JComponent;
 
 /**
  * Displays an image (and a background color)
- * @author Martin Steiger
  */
 public class JImage extends JComponent {
 
