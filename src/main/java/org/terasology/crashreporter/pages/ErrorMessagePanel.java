@@ -27,10 +27,11 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
-import java.util.Collection;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
@@ -83,6 +84,7 @@ public class ErrorMessagePanel extends JPanel {
         mainPanel.add(message, BorderLayout.NORTH);
 
         logFiles = findLogs(logFileFolder);
+        sortLogFiles(logFiles);
         tabPane = new JTabbedPane();
 
         if (!logFiles.isEmpty()) {
@@ -117,6 +119,26 @@ public class ErrorMessagePanel extends JPanel {
         }
         JLabel editHintLabel = new JLabel("<html>" + loc + "<br/><br/>" + editMessage + "</html>");
         add(editHintLabel, BorderLayout.SOUTH);
+    }
+
+    private static void sortLogFiles(List<Path> files) {
+        files.sort(new Comparator<Path>() {
+
+            @Override
+            public int compare(Path p0, Path p1) {
+                try {
+                    BasicFileAttributes attr0 = Files.readAttributes(p0, BasicFileAttributes.class);
+                    BasicFileAttributes attr1 = Files.readAttributes(p1, BasicFileAttributes.class);
+                    FileTime time0 = attr0.creationTime();
+                    FileTime time1 = attr1.creationTime();
+                    return time0.compareTo(time1);
+                } catch (Exception e) {
+                    // ignore silently
+                    return 0;
+                }
+            }
+
+        }.reversed());  // invert sort order
     }
 
     @Override
