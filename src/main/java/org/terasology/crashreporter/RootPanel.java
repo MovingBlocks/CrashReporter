@@ -16,35 +16,26 @@
 
 package org.terasology.crashreporter;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.GridLayout;
-import java.awt.Window;
+import org.terasology.crashreporter.pages.ErrorMessagePanel;
+import org.terasology.crashreporter.pages.FinalActionsPanel;
+import org.terasology.crashreporter.pages.UploadPanel;
+import org.terasology.crashreporter.pages.UserInfoPanel;
+import org.terasology.gui.JImage;
+import org.terasology.gui.RXCardLayout;
+
+import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.MatteBorder;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import java.net.URL;
-
-import javax.swing.BorderFactory;
-import javax.swing.Icon;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-import javax.swing.SwingConstants;
-import javax.swing.border.Border;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.MatteBorder;
-
-import org.terasology.crashreporter.pages.ErrorMessagePanel;
-import org.terasology.crashreporter.pages.FinalActionsPanel;
-import org.terasology.crashreporter.pages.UploadPanel;
-import org.terasology.gui.JImage;
-import org.terasology.gui.RXCardLayout;
 
 /**
  * The central panel that contains the wizard pages.
@@ -54,7 +45,7 @@ public class RootPanel extends JPanel {
     private static final long serialVersionUID = -907008390086125919L;
 
     /**
-     * @param exception the exception that occurred
+     * @param exception     the exception that occurred
      * @param logFolderFile the log file or <code>null</code>
      */
     public RootPanel(Throwable exception, Path logFolderFile) {
@@ -69,17 +60,19 @@ public class RootPanel extends JPanel {
         List<JComponent> pages = new ArrayList<>();
         final ErrorMessagePanel errorMessagePanel = new ErrorMessagePanel(exception, logFolderFile);
         pages.add(errorMessagePanel);
+        final UserInfoPanel userInfoPanel = new UserInfoPanel(errorMessagePanel.getLog(), errorMessagePanel.getLogFile());
+        pages.add(userInfoPanel);
         final UploadPanel uploadPanel = new UploadPanel(new Supplier<String>() {
             @Override
             public String get() {
-                    return errorMessagePanel.getLog();
-                }
-            }, new Supplier<String>() {
-                @Override
-                public String get() {
-                        return errorMessagePanel.getLogFile().toString();
-                    }
-                });
+                return userInfoPanel.getLog();
+            }
+        }, new Supplier<String>() {
+            @Override
+            public String get() {
+                return userInfoPanel.getLogFile().toString();
+            }
+        });
         pages.add(uploadPanel);
         pages.add(new FinalActionsPanel(new Supplier<URL>() {
 
