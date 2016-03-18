@@ -13,6 +13,7 @@ http://www.iconarchive.com/show/blogger-icons-by-rafiqul-hassan/Arrow-Next-icon.
 Actions irc join channel Icon
 Actions application exit Icon
 Actions dialog close Icon
+Actions dialog info Icon
 
 Artist: Oxygen Team
 Iconset: Oxygen Icons (883 icons)

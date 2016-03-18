@@ -16,6 +16,9 @@
 
 package org.terasology.gui;
 
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.JComponent;
 import java.awt.CardLayout;
 import java.awt.Component;
 import java.awt.Container;
@@ -24,10 +27,6 @@ import java.awt.event.HierarchyEvent;
 import java.awt.event.HierarchyListener;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.JComponent;
 
 /**
  * The <code>RXCardLayout</code> provides some extensions to the

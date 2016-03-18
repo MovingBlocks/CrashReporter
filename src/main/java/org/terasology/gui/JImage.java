@@ -16,11 +16,10 @@
 
 package org.terasology.gui;
 
+import javax.swing.JComponent;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
-
-import javax.swing.JComponent;
 
 /**
  * Displays an image (and a background color)

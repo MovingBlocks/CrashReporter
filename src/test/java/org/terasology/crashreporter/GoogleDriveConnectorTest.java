@@ -16,9 +16,7 @@
 
 package org.terasology.crashreporter;
 
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-
+import com.google.api.services.drive.model.File;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,7 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.terasology.crashreporter.logic.GoogleDriveConnector;
 
-import com.google.api.services.drive.model.File;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 
 public class GoogleDriveConnectorTest {
 

@@ -16,15 +16,14 @@
 
 package org.terasology.crashreporter;
 
-import java.awt.Dialog;
-import java.awt.Dimension;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Path;
-
 import javax.swing.JDialog;
 import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import java.awt.Dialog;
+import java.awt.Dimension;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
 
 /**
  * Displays a detailed error message and provides some options to communicate with devs.

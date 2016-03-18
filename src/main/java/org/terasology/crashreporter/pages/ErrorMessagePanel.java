@@ -16,6 +16,18 @@
 
 package org.terasology.crashreporter.pages;
 
+import com.google.common.collect.Lists;
+import org.terasology.crashreporter.I18N;
+import org.terasology.crashreporter.Resources;
+
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
+import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.io.IOException;
@@ -27,25 +39,11 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
-
-import javax.swing.BorderFactory;
-import javax.swing.Icon;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
-import javax.swing.SwingConstants;
-
-import org.terasology.crashreporter.I18N;
-import org.terasology.crashreporter.Resources;
-
-import com.google.common.collect.Lists;
 
 /**
  * Shows the error message plus stack trace

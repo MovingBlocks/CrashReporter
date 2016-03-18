@@ -16,6 +16,9 @@
 
 package org.terasology.crashreporter.pages;
 
+import com.google.api.services.drive.model.File;
+import org.terasology.crashreporter.logic.GoogleDriveConnector;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,10 +29,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.Callable;
-
-import org.terasology.crashreporter.logic.GoogleDriveConnector;
-
-import com.google.api.services.drive.model.File;
 
 /**
  * Upload the content to PasteBin

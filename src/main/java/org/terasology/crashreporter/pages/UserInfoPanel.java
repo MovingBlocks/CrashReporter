@@ -19,11 +19,18 @@ package org.terasology.crashreporter.pages;
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Font;
 import java.nio.file.Path;
 
 /**
@@ -39,8 +46,6 @@ public class UserInfoPanel extends JPanel {
     private String log;
     private final Path logFile;
 
-    private Boolean additionalInfoPresent;
-
     /**
      * @param log     the current contents of the log file
      * @param logFile the location of the relevant file
@@ -48,7 +53,6 @@ public class UserInfoPanel extends JPanel {
     public UserInfoPanel(String log, Path logFile) {
         this.log = log;
         this.logFile = logFile;
-        additionalInfoPresent = false;
 
         setLayout(new BorderLayout(50, 20));
 
@@ -64,23 +68,18 @@ public class UserInfoPanel extends JPanel {
         userMessageArea.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                additionalInfoPresent = true;
-                changeStatus();
+                refreshStatus();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                if (userMessageArea.getText().isEmpty()) {
-                    additionalInfoPresent = false;
-                    changeStatus();
-                }
+                refreshStatus();
             }
 
             // TODO not sure if this is ever used?
             @Override
             public void changedUpdate(DocumentEvent e) {
-                additionalInfoPresent = true;
-                changeStatus();
+                refreshStatus();
             }
         });
 
@@ -95,6 +94,10 @@ public class UserInfoPanel extends JPanel {
         add(statusLabel, BorderLayout.SOUTH);
     }
 
+    private boolean isEmpty() {
+        return userMessageArea.getText().isEmpty();
+    }
+
     @Override
     public void setVisible(boolean aFlag) {
         super.setVisible(aFlag);
@@ -103,16 +106,19 @@ public class UserInfoPanel extends JPanel {
             return;
         }
 
-        firePropertyChange("pageComplete", (Boolean) !additionalInfoPresent, additionalInfoPresent);
+        boolean empty = isEmpty();
+        firePropertyChange("pageComplete", empty, !empty);
     }
 
-    private void changeStatus() {
+    private void refreshStatus() {
         SwingUtilities.invokeLater(new Runnable() {
 
             @Override
             public void run() {
-                firePropertyChange("pageComplete", (Boolean) !additionalInfoPresent, additionalInfoPresent);
-                if (additionalInfoPresent) {
+                boolean empty = isEmpty();
+
+                firePropertyChange("pageComplete", empty, !empty);
+                if (!empty) {
                     // Set so that the warning label does not recreate the UI when gone
                     statusLabel.setText(" ");
                 } else {
@@ -123,7 +129,7 @@ public class UserInfoPanel extends JPanel {
     }
 
     public String getLog() {
-        if (!additionalInfoPresent) {
+        if (isEmpty()) {
             return log;
         } else {
             // probably don't want to apply i18n to this

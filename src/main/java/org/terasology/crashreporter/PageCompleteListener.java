@@ -16,10 +16,9 @@
 
 package org.terasology.crashreporter;
 
+import javax.swing.JComponent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-
-import javax.swing.JComponent;
 
 /**
  * Activates/deactivates the "next" button depending on property changed events.

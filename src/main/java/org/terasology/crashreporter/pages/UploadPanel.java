@@ -16,6 +16,16 @@
 
 package org.terasology.crashreporter.pages;
 
+import org.terasology.crashreporter.I18N;
+import org.terasology.crashreporter.Resources;
+
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.Desktop;
@@ -30,17 +40,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
-
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.border.EmptyBorder;
-
-import org.terasology.crashreporter.I18N;
-import org.terasology.crashreporter.Resources;
 
 /**
  * The panel where the log file content is uploaded to some web storage

@@ -16,14 +16,14 @@
 
 package org.terasology.crashreporter.pages;
 
-import java.net.URL;
-import java.util.concurrent.Callable;
-
 import org.jpaste.exceptions.PasteException;
 import org.jpaste.pastebin.PasteExpireDate;
 import org.jpaste.pastebin.Pastebin;
 import org.jpaste.pastebin.PastebinLink;
 import org.jpaste.pastebin.PastebinPaste;
+
+import java.net.URL;
+import java.util.concurrent.Callable;
 
 /**
  * Upload the content to PasteBin
