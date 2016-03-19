@@ -20,6 +20,7 @@ import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
 
 import javax.swing.BorderFactory;
+import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -54,15 +55,16 @@ public class UserInfoPanel extends JPanel {
         this.log = log;
         this.logFile = logFile;
 
-        setLayout(new BorderLayout(50, 20));
+        setLayout(new BorderLayout(0, 5));
 
-        String htmlText = "<html><h3>" + I18N.getMessage("additionalInfoTitle") + "</h3>" + I18N.getMessage("additionalInfoMessage") + "</html>";
+        String title = I18N.getMessage("additionalInfoTitle");
+        String message = I18N.getMessage("additionalInfoMessage");
+        String htmlText = "<html><h3>" + title + "</h3>" + message + "</html>";
 
-        requestLabel = new JLabel(htmlText, Resources.loadIcon("icons/Actions-dialog-info-icon.png"), SwingConstants.CENTER);
-        requestLabel.setBorder(new EmptyBorder(10, 0, 0, 0));
+        Icon icon = Resources.loadIcon("icons/Actions-dialog-info-icon.png");
+        requestLabel = new JLabel(htmlText, icon, SwingConstants.LEFT);
 
         userMessageArea = new JTextArea();
-        userMessageArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         userMessageArea.setFont(getFont().deriveFont(Font.PLAIN).deriveFont(12f));
 
         userMessageArea.getDocument().addDocumentListener(new DocumentListener() {
