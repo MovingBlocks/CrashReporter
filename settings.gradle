@@ -1,1 +1,8 @@
 rootProject.name = 'CrashReporter'
+include 'core'
+include 'terasology'
+include 'destsol'
+
+project(":core").name = "CrashReporter-core"
+project(":terasology").name = "CrashReporter-terasology"
+project(":destsol").name = "CrashReporter-destsol"

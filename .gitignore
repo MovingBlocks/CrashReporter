@@ -5,13 +5,13 @@
 .classpath
 .project
 .settings/
-/bin
-/build
+bin/
+build/
 
 # IntelliJ
-/*.iml
-/*.ipr
-/*.iws
+*.iml
+*.ipr
+*.iws
 
 # Log Output
 details.log

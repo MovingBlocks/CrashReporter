@@ -55,10 +55,6 @@ dependencies {
     //compile 'com.google.oauth-client:google-oauth-client-jetty:1.19.0'
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.9'
-}
-
 def convertGitBranch = { gitBranch ->
     // Remove "origin/" from "origin/develop"
     return gitBranch ? gitBranch.substring(gitBranch.lastIndexOf("/") + 1) : null
