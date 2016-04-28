@@ -16,6 +16,8 @@
 
 package org.terasology.crashreporter.pages;
 
+import org.terasology.crashreporter.GlobalProperties;
+import org.terasology.crashreporter.GlobalProperties.KEY;
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
 
@@ -63,15 +65,15 @@ public class UploadPanel extends JPanel {
 
     private JLabel titleLabel;
 
-    public UploadPanel(Supplier<String> logFileTextSupp, Supplier<String> logFileNameSupp) {
+    public UploadPanel(GlobalProperties properties, Supplier<String> logTextSupp, Supplier<String> logFileNameSupp) {
 
-        this.textSupplier = logFileTextSupp;
+        this.textSupplier = logTextSupp;
         this.logFileNameSupplier = logFileNameSupp;
         setLayout(new BorderLayout(50, 20));
         statusLabel = new JLabel(I18N.getMessage("noUpload"), SwingConstants.RIGHT);
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.BOLD));
         statusLabel.setBorder(new EmptyBorder(0, 5, 0, 5));
-        titleLabel = new JLabel(Resources.loadIcon("icons/Arrow-up-icon.png"), SwingConstants.CENTER);
+        titleLabel = new JLabel(Resources.loadIcon(properties.get(KEY.RES_UPLOAD_TITLE_IMAGE)), SwingConstants.CENTER);
         titleLabel.setBorder(new EmptyBorder(10, 0, 0, 0));
         add(titleLabel, BorderLayout.NORTH);
 
@@ -79,7 +81,7 @@ public class UploadPanel extends JPanel {
 
         JPanel hosterPanel = new JPanel(new GridLayout(0, 1, 0, 20));
         hosterPanel.setBorder(new EmptyBorder(0, 50, 0, 50));
-        uploadPasteBinButton = new JButton("PasteBin", Resources.loadIcon("icons/pastebin.png"));
+        uploadPasteBinButton = new JButton("PasteBin", Resources.loadIcon(properties.get(KEY.RES_PASTEBIN_ICON)));
         uploadPasteBinButton.setFont(buttonFont);
         uploadPasteBinButton.addActionListener(new ActionListener() {
             @Override
@@ -94,7 +96,7 @@ public class UploadPanel extends JPanel {
         });
         hosterPanel.add(uploadPasteBinButton);
 
-        uploadGDriveButton = new JButton("Google Drive", Resources.loadIcon("icons/Google_Drive_icon.png"));
+        uploadGDriveButton = new JButton("Google Drive", Resources.loadIcon(properties.get(KEY.RES_GDRIVE_ICON)));
         uploadGDriveButton.setFont(buttonFont);
         uploadGDriveButton.addActionListener(new ActionListener() {
             @Override
@@ -109,7 +111,8 @@ public class UploadPanel extends JPanel {
         });
         hosterPanel.add(uploadGDriveButton);
 
-        uploadSkipButton = new JButton(I18N.getMessage("skipUpload"), Resources.loadIcon("icons/Actions-edit-delete-icon.png"));
+        uploadSkipButton = new JButton(I18N.getMessage("skipUpload"),
+                Resources.loadIcon(properties.get(KEY.RES_SKIP_UPLOAD_ICON)));
         uploadSkipButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

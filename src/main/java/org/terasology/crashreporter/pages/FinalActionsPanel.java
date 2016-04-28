@@ -16,6 +16,8 @@
 
 package org.terasology.crashreporter.pages;
 
+import org.terasology.crashreporter.GlobalProperties;
+import org.terasology.crashreporter.GlobalProperties.KEY;
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
 
@@ -50,10 +52,6 @@ public class FinalActionsPanel extends JPanel {
 
     private static final long serialVersionUID = 2639334979749507943L;
 
-    private static final String SUPPORT_FORUM_LINK = "http://forum.terasology.org/forum/support.20/";
-    private static final String REPORT_ISSUE_LINK = "https://github.com/MovingBlocks/Terasology/issues/new";
-    private static final String JOIN_IRC_LINK = "https://webchat.freenode.net/?channels=terasology";
-
     private final Supplier<URL> uploadedFile;
 
     private final JTextArea linkText;
@@ -62,7 +60,7 @@ public class FinalActionsPanel extends JPanel {
 
     private boolean pageComplete;
 
-    public FinalActionsPanel(Supplier<URL> uploadedFile) {
+    public FinalActionsPanel(GlobalProperties properties, Supplier<URL> uploadedFile) {
 
         this.uploadedFile = uploadedFile;
 
@@ -71,7 +69,7 @@ public class FinalActionsPanel extends JPanel {
 
         String firstLine = I18N.getMessage("reportProblem");
         String htmlText = "<html><h3>" + firstLine + "</h3></html>";
-        Icon titleIcon = Resources.loadIcon("icons/Actions-irc-voice-icon.png");
+        Icon titleIcon = Resources.loadIcon(properties.get(KEY.RES_FINAL_TITLE_IMAGE));
         JLabel message = new JLabel(htmlText, titleIcon, SwingConstants.LEFT);
 
         add(message, BorderLayout.NORTH);
@@ -83,48 +81,48 @@ public class FinalActionsPanel extends JPanel {
         Font buttonFont = getFont().deriveFont(Font.BOLD).deriveFont(14f);
 
         JButton forumButton = new JButton(I18N.getMessage("gotoForum"));
-        forumButton.setIcon(Resources.loadIcon("icons/forum.png"));
+        forumButton.setIcon(Resources.loadIcon(properties.get(KEY.RES_FORUM_ICON)));
         forumButton.setFont(buttonFont);
         forumButton.addActionListener(new ActionListener() {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                openInBrowser(SUPPORT_FORUM_LINK);
+                openInBrowser(properties.get(KEY.SUPPORT_FORUM_LINK));
                 pageComplete = true;
                 firePropertyChange("pageComplete", !pageComplete, pageComplete);
             }
         });
-        forumButton.setToolTipText(SUPPORT_FORUM_LINK);
+        forumButton.setToolTipText(properties.get(KEY.SUPPORT_FORUM_LINK));
         gridPanel.add(forumButton);
 
         JButton enterIrc = new JButton(I18N.getMessage("joinIrc"));
         enterIrc.setFont(buttonFont);
-        enterIrc.setIcon(Resources.loadIcon("icons/irc.png"));
+        enterIrc.setIcon(Resources.loadIcon(properties.get(KEY.RES_IRC_ICON)));
         enterIrc.addActionListener(new ActionListener() {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                openInBrowser(JOIN_IRC_LINK);
+                openInBrowser(properties.get(KEY.JOIN_IRC_LINK));
                 pageComplete = true;
                 firePropertyChange("pageComplete", !pageComplete, pageComplete);
             }
         });
-        enterIrc.setToolTipText(JOIN_IRC_LINK);
+        enterIrc.setToolTipText(properties.get(KEY.JOIN_IRC_LINK));
         gridPanel.add(enterIrc);
 
         JButton githubIssueButton = new JButton(I18N.getMessage("reportIssue"));
         githubIssueButton.setFont(buttonFont);
-        githubIssueButton.setIcon(Resources.loadIcon("icons/github.png"));
+        githubIssueButton.setIcon(Resources.loadIcon(properties.get(KEY.RES_GITHUB_ICON)));
         githubIssueButton.addActionListener(new ActionListener() {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                openInBrowser(REPORT_ISSUE_LINK);
+                openInBrowser(properties.get(KEY.REPORT_ISSUE_LINK));
                 pageComplete = true;
                 firePropertyChange("pageComplete", !pageComplete, pageComplete);
             }
         });
-        githubIssueButton.setToolTipText(REPORT_ISSUE_LINK);
+        githubIssueButton.setToolTipText(properties.get(KEY.REPORT_ISSUE_LINK));
         gridPanel.add(githubIssueButton);
 
         add(gridPanel, BorderLayout.CENTER);
@@ -143,7 +141,7 @@ public class FinalActionsPanel extends JPanel {
         linkText.setEditable(false);
         linkPanel.add(linkText, BorderLayout.CENTER);
 
-        copyLinkButton = new JButton(Resources.loadIcon("icons/Actions-edit-paste-icon.png"));
+        copyLinkButton = new JButton(Resources.loadIcon(properties.get(KEY.RES_COPY_ICON)));
         copyLinkButton.setToolTipText(I18N.getMessage("copyToClipboard"));
         copyLinkButton.addActionListener(new ActionListener() {
 

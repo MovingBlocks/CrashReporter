@@ -20,6 +20,9 @@ import javax.swing.JDialog;
 import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+
+import org.terasology.crashreporter.GlobalProperties.KEY;
+
 import java.awt.Dialog;
 import java.awt.Dimension;
 import java.lang.reflect.InvocationTargetException;
@@ -36,11 +39,11 @@ public final class CrashReporter {
     }
 
     /**
-     * @param t the exception
+     * Can be called from any thread.
+     * @param throwable the exception to report
      * @param logFileFolder the log file folder or <code>null</code>
      */
-    public static void report(final Throwable t, final Path logFileFolder) {
-
+    public static void report(final Throwable throwable, final Path logFileFolder) {
         // Swing element methods must be called in the swing thread
         try {
             SwingUtilities.invokeAndWait(new Runnable() {
@@ -51,22 +54,23 @@ public final class CrashReporter {
                     try {
                         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
                     } catch (Exception e) {
-                        e.printStackTrace(System.err);
+                        e.printStackTrace();
                     }
-                    showModalDialog(t, logFileFolder);
+                    GlobalProperties properties = new GlobalProperties();
+                    showModalDialog(throwable, properties, logFileFolder);
                     try {
                         UIManager.setLookAndFeel(oldLaF);
                     } catch (Exception e) {
-                        e.printStackTrace(System.err);
+                        e.printStackTrace();
                     }
                 }
             });
         } catch (InvocationTargetException | InterruptedException e) {
-            e.printStackTrace(System.err);
+            e.printStackTrace();
         }
     }
 
-    protected static void showModalDialog(Throwable t, Path logFolder) {
+    protected static void showModalDialog(Throwable throwable, GlobalProperties properties, Path logFolder) {
         String dialogTitle = I18N.getMessage("dialogTitle");
         String version = Resources.getVersion();
 
@@ -74,9 +78,9 @@ public final class CrashReporter {
             dialogTitle += " " + version;
         }
 
-        RootPanel panel = new RootPanel(t, logFolder);
+        RootPanel panel = new RootPanel(throwable, properties, logFolder);
         JDialog dialog = new JDialog((Dialog) null, dialogTitle, true);
-        dialog.setIconImage(Resources.loadImage("icons/server.png"));
+        dialog.setIconImage(Resources.loadImage(properties.get(KEY.RES_SERVER_ICON)));
         dialog.setContentPane(panel);
         dialog.setMinimumSize(new Dimension(600, 400));
         dialog.setLocationRelativeTo(null);

@@ -16,6 +16,7 @@
 
 package org.terasology.crashreporter;
 
+import org.terasology.crashreporter.GlobalProperties.KEY;
 import org.terasology.crashreporter.pages.ErrorMessagePanel;
 import org.terasology.crashreporter.pages.FinalActionsPanel;
 import org.terasology.crashreporter.pages.UploadPanel;
@@ -55,23 +56,25 @@ public class RootPanel extends JPanel {
 
     /**
      * @param exception     the exception that occurred
+     * @param properties    the properties for this dialog wizard
      * @param logFolderFile the log file or <code>null</code>
      */
-    public RootPanel(Throwable exception, Path logFolderFile) {
+    public RootPanel(Throwable exception, GlobalProperties properties, Path logFolderFile) {
 
         setLayout(new BorderLayout());
         Font buttonFont = getFont().deriveFont(Font.BOLD, 14f);
 
-        final Icon prevIcon = Resources.loadIcon("icons/Arrow-Prev-icon.png");
-        final Icon nextIcon = Resources.loadIcon("icons/Arrow-Next-icon.png");
-        final Icon closeIcon = Resources.loadIcon("icons/Actions-application-exit-icon.png");
+        final Icon prevIcon = Resources.loadIcon(properties.get(KEY.RES_ARROW_PREV));
+        final Icon nextIcon = Resources.loadIcon(properties.get(KEY.RES_ARROW_NEXT));
+        final Icon closeIcon = Resources.loadIcon(properties.get(KEY.RES_EXIT_ICON));
 
         List<JComponent> pages = new ArrayList<>();
-        final ErrorMessagePanel errorMessagePanel = new ErrorMessagePanel(exception, logFolderFile);
+        final ErrorMessagePanel errorMessagePanel = new ErrorMessagePanel(properties, exception, logFolderFile);
         pages.add(errorMessagePanel);
-        final UserInfoPanel userInfoPanel = new UserInfoPanel(errorMessagePanel.getLog(), errorMessagePanel.getLogFile());
+        final UserInfoPanel userInfoPanel = new UserInfoPanel(properties,
+                errorMessagePanel.getLog(), errorMessagePanel.getLogFile());
         pages.add(userInfoPanel);
-        final UploadPanel uploadPanel = new UploadPanel(new Supplier<String>() {
+        final UploadPanel uploadPanel = new UploadPanel(properties, new Supplier<String>() {
             @Override
             public String get() {
                 return userInfoPanel.getLog();
@@ -83,7 +86,7 @@ public class RootPanel extends JPanel {
             }
         });
         pages.add(uploadPanel);
-        pages.add(new FinalActionsPanel(new Supplier<URL>() {
+        pages.add(new FinalActionsPanel(properties, new Supplier<URL>() {
 
             @Override
             public URL get() {
@@ -99,7 +102,7 @@ public class RootPanel extends JPanel {
             mainPanel.add(page);
         }
 
-        JComponent image = new JImage(Resources.loadImage("icons/banner.jpg"));
+        JComponent image = new JImage(Resources.loadImage(properties.get(KEY.RES_BANNER_IMAGE)));
         image.setBackground(new Color(20, 20, 10));
         image.setBorder(new MatteBorder(0, 0, 0, 1, Color.LIGHT_GRAY));
         add(image, BorderLayout.WEST);

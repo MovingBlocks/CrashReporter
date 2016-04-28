@@ -16,6 +16,8 @@
 
 package org.terasology.crashreporter.pages;
 
+import org.terasology.crashreporter.GlobalProperties;
+import org.terasology.crashreporter.GlobalProperties.KEY;
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
 
@@ -51,7 +53,7 @@ public class UserInfoPanel extends JPanel {
      * @param log     the current contents of the log file
      * @param logFile the location of the relevant file
      */
-    public UserInfoPanel(String log, Path logFile) {
+    public UserInfoPanel(GlobalProperties properties, String log, Path logFile) {
         this.log = log;
         this.logFile = logFile;
 
@@ -61,7 +63,7 @@ public class UserInfoPanel extends JPanel {
         String message = I18N.getMessage("additionalInfoMessage");
         String htmlText = "<html><h3>" + title + "</h3>" + message + "</html>";
 
-        Icon icon = Resources.loadIcon("icons/Actions-dialog-info-icon.png");
+        Icon icon = Resources.loadIcon(properties.get(KEY.RES_INFO_TITLE_IMAGE));
         requestLabel = new JLabel(htmlText, icon, SwingConstants.LEFT);
 
         userMessageArea = new JTextArea();

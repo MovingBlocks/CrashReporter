@@ -17,6 +17,9 @@
 package org.terasology.crashreporter.pages;
 
 import com.google.common.collect.Lists;
+
+import org.terasology.crashreporter.GlobalProperties;
+import org.terasology.crashreporter.GlobalProperties.KEY;
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
 
@@ -60,7 +63,7 @@ public class ErrorMessagePanel extends JPanel {
      * @param exception the exception to display
      * @param logFileFolder the folder that contains the relevant log files
      */
-    public ErrorMessagePanel(Throwable exception, Path logFileFolder) {
+    public ErrorMessagePanel(GlobalProperties properties, Throwable exception, Path logFileFolder) {
 
         JPanel mainPanel = this;
         mainPanel.setLayout(new BorderLayout(0, 5));
@@ -74,7 +77,7 @@ public class ErrorMessagePanel extends JPanel {
         text = text.replaceAll("\\r?\\n", "<br/>");
 
         String firstLine = I18N.getMessage("firstLine");
-        Icon titleIcon = Resources.loadIcon("icons/Actions-dialog-close-icon.png");
+        Icon titleIcon = Resources.loadIcon(properties.get(KEY.RES_ERROR_TITLE_IMAGE));
 
         String htmlText = "<html><h3>" + firstLine + "</h3>" + text + "</html>";
         JLabel message = new JLabel(htmlText, titleIcon, SwingConstants.LEFT);
