@@ -1,0 +1,7 @@
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.9'
+}
+
+allprojects {
+    group = 'org.terasology'
+}

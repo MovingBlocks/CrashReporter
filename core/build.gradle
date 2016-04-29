@@ -18,8 +18,6 @@ def versionInfoFile = new File(sourceSets.main.output.resourcesDir, 'versionInfo
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-group = 'org.terasology'
-
 // We use both Maven Central and our own Artifactory instance, which contains module builds, extra libs, and so on
 repositories {
     mavenCentral()
