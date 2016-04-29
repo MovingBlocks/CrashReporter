@@ -18,7 +18,6 @@ package org.terasology.crashreporter;
 
 /**
  * A simple definition of a game engine
- * @author Martin Steiger
  */
 public interface MyEngine extends AutoCloseable {
 

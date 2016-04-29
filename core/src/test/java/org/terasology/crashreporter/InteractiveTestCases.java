@@ -30,7 +30,6 @@ import java.util.Locale;
 /**
  * An interactive test using Mockito
  * A few test cases for manual (not JUnit) inspection
- * @author Martin Steiger
  */
 @SuppressWarnings("unused")
 public final class InteractiveTestCases {
