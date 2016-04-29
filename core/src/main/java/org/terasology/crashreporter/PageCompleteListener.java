@@ -30,7 +30,7 @@ class PageCompleteListener implements PropertyChangeListener {
     /**
      * @param nextButton the "next" button
      */
-    public PageCompleteListener(JComponent nextButton) {
+    PageCompleteListener(JComponent nextButton) {
         this.nextButton = nextButton;
     }
 

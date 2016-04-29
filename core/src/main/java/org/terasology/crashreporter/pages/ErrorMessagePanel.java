@@ -62,6 +62,7 @@ public class ErrorMessagePanel extends JPanel {
     /**
      * @param exception the exception to display
      * @param logFileFolder the folder that contains the relevant log files
+     * @param properties    the properties for this dialog wizard
      */
     public ErrorMessagePanel(GlobalProperties properties, Throwable exception, Path logFileFolder) {
 

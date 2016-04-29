@@ -61,7 +61,7 @@ public final class Resources {
     private static BufferedImage createDummyImage(int w, int h, String text) {
         BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = img.createGraphics();
-        float[] dash = new float[] { 5, 5 };
+        float[] dash = new float[] {5, 5};
         g.setStroke(new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, dash, 0));
         g.setColor(Color.BLACK);
         g.drawRect(0, 0, w - 1, h - 1);

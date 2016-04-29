@@ -21,7 +21,6 @@ import org.terasology.crashreporter.GlobalProperties.KEY;
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
 
-import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -52,6 +51,7 @@ public class UserInfoPanel extends JPanel {
     /**
      * @param log     the current contents of the log file
      * @param logFile the location of the relevant file
+     * @param properties    the properties for this dialog wizard
      */
     public UserInfoPanel(GlobalProperties properties, String log, Path logFile) {
         this.log = log;

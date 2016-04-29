@@ -190,7 +190,7 @@ public class RXCardLayout extends CardLayout implements HierarchyListener {
 
         private boolean isNext;
 
-        public CardAction(String text, boolean isNext) {
+        CardAction(String text, boolean isNext) {
             super(text);
             this.isNext = isNext;
             putValue(Action.SHORT_DESCRIPTION, getValue(Action.NAME));
