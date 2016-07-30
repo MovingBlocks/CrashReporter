@@ -1,0 +1,13 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+
+dependencies {
+    // Using the parent's path here to allow the CR to be embedded deeper in a Terasology workspace
+    String crCorePath = parent.path + ":cr-core"
+    // If we're in a standalone workspace we'll end up with "::cr-core" so fix real quick
+    crCorePath = crCorePath.replaceAll('::', ':')
+    println "cr-destsol is setting its cr-core dependency using path " + crCorePath
+    compile project(crCorePath)
+}
