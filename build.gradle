@@ -8,6 +8,6 @@ task wrapper(type: Wrapper) {
 // Using this instead of allprojects allows this project to be embedded yet not affect parent projects
 group = 'org.terasology'
 subprojects {
-    group = 'org.terasology'
+    group = 'org.terasology.crashreporter'
 }
 
