@@ -48,7 +48,8 @@ dependencies {
 
     testRuntime group: 'ch.qos.logback', name: 'logback-classic', version: '1.1.7'
 
-    compile 'com.google.apis:google-api-services-drive:v2-rev193-1.20.0'
+    compile group: 'com.google.guava', name: 'guava', version: '19.0'
+    compile ('com.google.apis:google-api-services-drive:v2-rev193-1.20.0'){exclude module: 'guava-jdk5'}
     //compile 'com.google.oauth-client:google-oauth-client-java6:1.19.0'
     //compile 'com.google.oauth-client:google-oauth-client-jetty:1.19.0'
 }
