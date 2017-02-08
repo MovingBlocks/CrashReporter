@@ -33,6 +33,7 @@ import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Font;
+import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -77,8 +78,8 @@ public class ErrorMessagePanel extends JPanel {
         // Replace newline chars. with html newline elements (not needed in most cases)
         text = text.replaceAll("\\r?\\n", "<br/>");
 
-        String firstLine = I18N.getMessage("firstLine");
-        Icon titleIcon = Resources.loadIcon(properties.get(KEY.RES_ERROR_TITLE_IMAGE));
+        String firstLine = I18N.getMessage( (GraphicsEnvironment.isHeadless()) ? "firstLine" : "firstLineNonCritical");
+        Icon titleIcon = Resources.loadIcon(properties.get( (GraphicsEnvironment.isHeadless()) ? KEY.RES_ERROR_TITLE_IMAGE : KEY.RES_INFO_TITLE_IMAGE));
 
         String htmlText = "<html><h3>" + firstLine + "</h3>" + text + "</html>";
         JLabel message = new JLabel(htmlText, titleIcon, SwingConstants.LEFT);

@@ -25,6 +25,7 @@ import org.terasology.crashreporter.GlobalProperties.KEY;
 
 import java.awt.Dialog;
 import java.awt.Dimension;
+import java.awt.GraphicsEnvironment;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 
@@ -71,7 +72,7 @@ public final class CrashReporter {
     }
 
     protected static void showModalDialog(Throwable throwable, GlobalProperties properties, Path logFolder) {
-        String dialogTitle = I18N.getMessage("dialogTitle");
+        String dialogTitle = I18N.getMessage(GraphicsEnvironment.isHeadless() ? "dialogTitle" : "dialogTitleNonCritical");
         String version = Resources.getVersion();
 
         if (version != null) {
