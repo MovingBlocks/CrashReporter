@@ -25,7 +25,6 @@ import org.terasology.crashreporter.GlobalProperties.KEY;
 
 import java.awt.Dialog;
 import java.awt.Dimension;
-import java.awt.GraphicsEnvironment;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 
@@ -43,8 +42,9 @@ public final class CrashReporter {
      * Can be called from any thread.
      * @param throwable the exception to report
      * @param logFileFolder the log file folder or <code>null</code>
+     * @param ifCritical true if CrashReporter is in the critical mode
      */
-    public static void report(final Throwable throwable, final Path logFileFolder) {
+    public static void report(final Throwable throwable, final Path logFileFolder, final boolean ifCritical) {
         // Swing element methods must be called in the swing thread
         try {
             SwingUtilities.invokeAndWait(new Runnable() {
@@ -58,7 +58,7 @@ public final class CrashReporter {
                         e.printStackTrace();
                     }
                     GlobalProperties properties = new GlobalProperties();
-                    showModalDialog(throwable, properties, logFileFolder);
+                    showModalDialog(throwable, properties, logFileFolder,ifCritical);
                     try {
                         UIManager.setLookAndFeel(oldLaF);
                     } catch (Exception e) {
@@ -71,15 +71,15 @@ public final class CrashReporter {
         }
     }
 
-    protected static void showModalDialog(Throwable throwable, GlobalProperties properties, Path logFolder) {
-        String dialogTitle = I18N.getMessage(GraphicsEnvironment.isHeadless() ? "dialogTitle" : "dialogTitleNonCritical");
+    protected static void showModalDialog(Throwable throwable, GlobalProperties properties, Path logFolder, boolean ifCritical) {
+        String dialogTitle = I18N.getMessage(ifCritical ? "dialogTitle" : "dialogTitleNonCritical");
         String version = Resources.getVersion();
 
         if (version != null) {
             dialogTitle += " " + version;
         }
 
-        RootPanel panel = new RootPanel(throwable, properties, logFolder);
+        RootPanel panel = new RootPanel(throwable, properties, logFolder,ifCritical);
         JDialog dialog = new JDialog((Dialog) null, dialogTitle, true);
         dialog.setIconImage(Resources.loadImage(properties.get(KEY.RES_SERVER_ICON)));
         dialog.setContentPane(panel);
