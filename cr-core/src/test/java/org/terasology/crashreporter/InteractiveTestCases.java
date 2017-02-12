@@ -66,7 +66,7 @@ public final class InteractiveTestCases {
 
             if (!GraphicsEnvironment.isHeadless()) {
                 Path logPath = Paths.get(".");
-                CrashReporter.report(e, logPath,true);
+                CrashReporter.report(e, logPath);
             }
         }
     }

@@ -23,6 +23,7 @@ import org.terasology.crashreporter.GlobalProperties.KEY;
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
 
+import javax.print.attribute.standard.Severity;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JLabel;
@@ -63,10 +64,10 @@ public class ErrorMessagePanel extends JPanel {
      * @param exception the exception to display
      * @param logFileFolder the folder that contains the relevant log files
      * @param properties    the properties for this dialog wizard
-     * @param ifCritical    true if CrashReporter is in the critical mode
+     * @param severity      ERROR calls crash reporter, WARNING calls issue reporter, REPORT calls feedback window
 
      */
-    public ErrorMessagePanel(GlobalProperties properties, Throwable exception, Path logFileFolder, boolean ifCritical) {
+    public ErrorMessagePanel(GlobalProperties properties, Throwable exception, Path logFileFolder, Severity severity) {
 
         JPanel mainPanel = this;
         mainPanel.setLayout(new BorderLayout(0, 5));
@@ -79,8 +80,21 @@ public class ErrorMessagePanel extends JPanel {
         // Replace newline chars. with html newline elements (not needed in most cases)
         text = text.replaceAll("\\r?\\n", "<br/>");
 
-        String firstLine = I18N.getMessage( ifCritical ? "firstLine" : "firstLineNonCritical");
-        Icon titleIcon = Resources.loadIcon(properties.get( ifCritical ? KEY.RES_ERROR_TITLE_IMAGE : KEY.RES_INFO_TITLE_IMAGE));
+        String firstLine;
+        Icon titleIcon;
+        if (severity == Severity.ERROR){
+            firstLine = I18N.getMessage("firstLineCrash");
+            titleIcon = Resources.loadIcon(properties.get( KEY.RES_ERROR_TITLE_IMAGE ));
+        }
+        else if(severity == Severity.WARNING){
+            firstLine = I18N.getMessage("firstLineIssue");
+            titleIcon = Resources.loadIcon(properties.get( KEY.RES_INFO_TITLE_IMAGE ));
+        }
+        else{
+            //For future feedback mode
+            firstLine = I18N.getMessage("firstLineFeedback");
+            titleIcon = Resources.loadIcon(properties.get( KEY.RES_INFO_TITLE_IMAGE ));
+        }
 
         String htmlText = "<html><h3>" + firstLine + "</h3>" + text + "</html>";
         JLabel message = new JLabel(htmlText, titleIcon, SwingConstants.LEFT);

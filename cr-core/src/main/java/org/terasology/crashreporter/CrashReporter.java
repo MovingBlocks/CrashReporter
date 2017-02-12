@@ -16,6 +16,7 @@
 
 package org.terasology.crashreporter;
 
+import javax.print.attribute.standard.Severity;
 import javax.swing.JDialog;
 import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
@@ -39,12 +40,21 @@ public final class CrashReporter {
     }
 
     /**
+     * By default, it is a CrashReporter
+     * @param throwable     the exception to report
+     * @param logFileFolder the log file folder or <code>null</code>
+     */
+    public static void report(final Throwable throwable, final Path logFileFolder) {
+        report(throwable, logFileFolder, Severity.ERROR);
+    }
+
+    /**
      * Can be called from any thread.
      * @param throwable the exception to report
      * @param logFileFolder the log file folder or <code>null</code>
-     * @param ifCritical true if CrashReporter is in the critical mode
+     * @param severity      ERROR calls crash reporter, WARNING calls issue reporter, REPORT calls feedback window
      */
-    public static void report(final Throwable throwable, final Path logFileFolder, final boolean ifCritical) {
+    public static void report(final Throwable throwable, final Path logFileFolder, final Severity severity) {
         // Swing element methods must be called in the swing thread
         try {
             SwingUtilities.invokeAndWait(new Runnable() {
@@ -58,7 +68,7 @@ public final class CrashReporter {
                         e.printStackTrace();
                     }
                     GlobalProperties properties = new GlobalProperties();
-                    showModalDialog(throwable, properties, logFileFolder,ifCritical);
+                    showModalDialog(throwable, properties, logFileFolder, severity);
                     try {
                         UIManager.setLookAndFeel(oldLaF);
                     } catch (Exception e) {
@@ -71,15 +81,18 @@ public final class CrashReporter {
         }
     }
 
-    protected static void showModalDialog(Throwable throwable, GlobalProperties properties, Path logFolder, boolean ifCritical) {
-        String dialogTitle = I18N.getMessage(ifCritical ? "dialogTitle" : "dialogTitleNonCritical");
+    protected static void showModalDialog(Throwable throwable, GlobalProperties properties, Path logFolder, Severity severity) {
+        String dialogTitle;
+        if (severity == Severity.ERROR) dialogTitle = I18N.getMessage("crashTitle");
+        else if (severity == Severity.WARNING) dialogTitle = I18N.getMessage("issueTitle");
+        else dialogTitle = I18N.getMessage("feedbackTitle");      // For future feedback mode use
         String version = Resources.getVersion();
 
         if (version != null) {
             dialogTitle += " " + version;
         }
 
-        RootPanel panel = new RootPanel(throwable, properties, logFolder,ifCritical);
+        RootPanel panel = new RootPanel(throwable, properties, logFolder,severity);
         JDialog dialog = new JDialog((Dialog) null, dialogTitle, true);
         dialog.setIconImage(Resources.loadImage(properties.get(KEY.RES_SERVER_ICON)));
         dialog.setContentPane(panel);

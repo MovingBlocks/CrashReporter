@@ -24,6 +24,7 @@ import org.terasology.crashreporter.pages.UserInfoPanel;
 import org.terasology.gui.JImage;
 import org.terasology.gui.RXCardLayout;
 
+import javax.print.attribute.standard.Severity;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JButton;
@@ -58,9 +59,9 @@ public class RootPanel extends JPanel {
      * @param exception     the exception that occurred
      * @param properties    the properties for this dialog wizard
      * @param logFolderFile the log file or <code>null</code>
-     * @param ifCritical    true if CrashReporter is in the critical mode
+     * @param severity      ERROR calls crash reporter, WARNING calls issue reporter, REPORT calls feedback window
      */
-    public RootPanel(Throwable exception, GlobalProperties properties, Path logFolderFile, boolean ifCritical) {
+    public RootPanel(Throwable exception, GlobalProperties properties, Path logFolderFile, Severity severity) {
 
         setLayout(new BorderLayout());
         Font buttonFont = getFont().deriveFont(Font.BOLD, 14f);
@@ -70,7 +71,7 @@ public class RootPanel extends JPanel {
         final Icon closeIcon = Resources.loadIcon(properties.get(KEY.RES_EXIT_ICON));
 
         List<JComponent> pages = new ArrayList<>();
-        final ErrorMessagePanel errorMessagePanel = new ErrorMessagePanel(properties, exception, logFolderFile, ifCritical);
+        final ErrorMessagePanel errorMessagePanel = new ErrorMessagePanel(properties, exception, logFolderFile, severity);
         pages.add(errorMessagePanel);
         final UserInfoPanel userInfoPanel = new UserInfoPanel(properties,
                 errorMessagePanel.getLog(), errorMessagePanel.getLogFile());
