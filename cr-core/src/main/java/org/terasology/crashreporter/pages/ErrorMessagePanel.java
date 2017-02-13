@@ -18,12 +18,12 @@ package org.terasology.crashreporter.pages;
 
 import com.google.common.collect.Lists;
 
+import org.terasology.crashreporter.CrashReporter;
 import org.terasology.crashreporter.GlobalProperties;
 import org.terasology.crashreporter.GlobalProperties.KEY;
 import org.terasology.crashreporter.I18N;
 import org.terasology.crashreporter.Resources;
 
-import javax.print.attribute.standard.Severity;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JLabel;
@@ -61,13 +61,13 @@ public class ErrorMessagePanel extends JPanel {
     private final List<Path> logFiles;
 
     /**
-     * @param exception the exception to display
+     * @param exception     the exception to display
      * @param logFileFolder the folder that contains the relevant log files
      * @param properties    the properties for this dialog wizard
-     * @param severity      ERROR calls crash reporter, WARNING calls issue reporter, REPORT calls feedback window
+     * @param mode          crash reporter, issue reporter or feedback window
 
      */
-    public ErrorMessagePanel(GlobalProperties properties, Throwable exception, Path logFileFolder, Severity severity) {
+    public ErrorMessagePanel(GlobalProperties properties, Throwable exception, Path logFileFolder, CrashReporter.MODE mode) {
 
         JPanel mainPanel = this;
         mainPanel.setLayout(new BorderLayout(0, 5));
@@ -82,20 +82,21 @@ public class ErrorMessagePanel extends JPanel {
 
         String firstLine;
         Icon titleIcon;
-        if (severity == Severity.ERROR){
-            firstLine = I18N.getMessage("firstLineCrash");
-            titleIcon = Resources.loadIcon(properties.get( KEY.RES_ERROR_TITLE_IMAGE ));
+        switch (mode) {
+            case FEEDBACK:
+                //For future feedback mode
+                firstLine = I18N.getMessage("firstLineFeedback");
+                titleIcon = Resources.loadIcon(properties.get( KEY.RES_INFO_TITLE_IMAGE ));
+                break;
+            case ISSUE_REPORTER:
+                firstLine = I18N.getMessage("firstLineIssue");
+                titleIcon = Resources.loadIcon(properties.get( KEY.RES_INFO_TITLE_IMAGE ));
+                break;
+            default:
+                firstLine = I18N.getMessage("firstLineCrash");
+                titleIcon = Resources.loadIcon(properties.get( KEY.RES_ERROR_TITLE_IMAGE ));
+                break;
         }
-        else if(severity == Severity.WARNING){
-            firstLine = I18N.getMessage("firstLineIssue");
-            titleIcon = Resources.loadIcon(properties.get( KEY.RES_INFO_TITLE_IMAGE ));
-        }
-        else{
-            //For future feedback mode
-            firstLine = I18N.getMessage("firstLineFeedback");
-            titleIcon = Resources.loadIcon(properties.get( KEY.RES_INFO_TITLE_IMAGE ));
-        }
-
         String htmlText = "<html><h3>" + firstLine + "</h3>" + text + "</html>";
         JLabel message = new JLabel(htmlText, titleIcon, SwingConstants.LEFT);
 
