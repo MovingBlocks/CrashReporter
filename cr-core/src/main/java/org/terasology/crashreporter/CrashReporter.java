@@ -20,6 +20,7 @@ import javax.swing.JDialog;
 import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.WindowConstants;
 
 import org.terasology.crashreporter.GlobalProperties.KEY;
 
@@ -100,13 +101,13 @@ public final class CrashReporter {
         }
 
         RootPanel panel = new RootPanel(throwable, properties, logFolder, mode);
-        JDialog dialog = new JDialog((Dialog) null, dialogTitle, true);
+        JDialog dialog = new JDialog((Dialog) null, dialogTitle, false);
+        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         dialog.setIconImage(Resources.loadImage(properties.get(KEY.RES_SERVER_ICON)));
         dialog.setContentPane(panel);
         dialog.setMinimumSize(new Dimension(600, 400));
         dialog.setLocationRelativeTo(null);
         dialog.setResizable(true);      // disabled by default
         dialog.setVisible(true);
-        dialog.dispose();
     }
 }
