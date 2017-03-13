@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 MovingBlocks
+ * Copyright 2017 MovingBlocks
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.terasology.crashreporter.pages;
 
 import com.google.common.collect.Lists;
 
+import org.terasology.crashreporter.CrashReporter;
 import org.terasology.crashreporter.GlobalProperties;
 import org.terasology.crashreporter.GlobalProperties.KEY;
 import org.terasology.crashreporter.I18N;
@@ -33,8 +34,12 @@ import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Font;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.RandomAccessFile;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.nio.file.FileVisitOption;
@@ -49,7 +54,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 /**
- * Shows the error message plus stack trace
+ * Shows the error message plus stack trace.
  */
 public class ErrorMessagePanel extends JPanel {
 
@@ -59,12 +64,18 @@ public class ErrorMessagePanel extends JPanel {
     private final List<JTextArea> textAreas = Lists.newArrayList();
     private final List<Path> logFiles;
 
+    private final LogUpdateWorker logUpdateWorker;
+
+    // logReaders is the list of each log file's reader
+    private final List<RandomAccessFile> logReaders = Lists.newArrayList();
+
     /**
-     * @param exception the exception to display
+     * @param exception     the exception to display
      * @param logFileFolder the folder that contains the relevant log files
      * @param properties    the properties for this dialog wizard
+     * @param mode          crash reporter, issue reporter or feedback window
      */
-    public ErrorMessagePanel(GlobalProperties properties, Throwable exception, Path logFileFolder) {
+    public ErrorMessagePanel(GlobalProperties properties, Throwable exception, Path logFileFolder, CrashReporter.MODE mode) {
 
         JPanel mainPanel = this;
         mainPanel.setLayout(new BorderLayout(0, 5));
@@ -77,9 +88,23 @@ public class ErrorMessagePanel extends JPanel {
         // Replace newline chars. with html newline elements (not needed in most cases)
         text = text.replaceAll("\\r?\\n", "<br/>");
 
-        String firstLine = I18N.getMessage("firstLine");
-        Icon titleIcon = Resources.loadIcon(properties.get(KEY.RES_ERROR_TITLE_IMAGE));
-
+        String firstLine;
+        Icon titleIcon;
+        switch (mode) {
+            case FEEDBACK:
+                //For future feedback mode
+                firstLine = I18N.getMessage("firstLineFeedback");
+                titleIcon = Resources.loadIcon(properties.get(KEY.RES_INFO_TITLE_IMAGE));
+                break;
+            case ISSUE_REPORTER:
+                firstLine = I18N.getMessage("firstLineIssue");
+                titleIcon = Resources.loadIcon(properties.get(KEY.RES_INFO_TITLE_IMAGE));
+                break;
+            default:
+                firstLine = I18N.getMessage("firstLineCrash");
+                titleIcon = Resources.loadIcon(properties.get(KEY.RES_ERROR_TITLE_IMAGE));
+                break;
+        }
         String htmlText = "<html><h3>" + firstLine + "</h3>" + text + "</html>";
         JLabel message = new JLabel(htmlText, titleIcon, SwingConstants.LEFT);
 
@@ -97,6 +122,16 @@ public class ErrorMessagePanel extends JPanel {
                 String tabName = logFileFolder.relativize(logFile).toString();
                 tabPane.addTab(tabName, new JScrollPane(logArea));
                 textAreas.add(logArea);
+
+                // Add reader of each log file in logReaders
+                try {
+                    File file = logFile.toFile();
+                    RandomAccessFile logReader = new RandomAccessFile(file, "r");
+                    logReader.seek(file.length());
+                    logReaders.add(logReader);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
             add(tabPane, BorderLayout.CENTER);
         } else {
@@ -121,6 +156,24 @@ public class ErrorMessagePanel extends JPanel {
         }
         JLabel editHintLabel = new JLabel("<html>" + loc + "<br/><br/>" + editMessage + "</html>");
         add(editHintLabel, BorderLayout.SOUTH);
+
+        // Initialize log folder watching
+        logUpdateWorker = new LogUpdateWorker(logFileFolder);
+        PropertyChangeListener logChangeListener = new PropertyChangeListener() {
+            @Override
+            public void propertyChange(PropertyChangeEvent evt) {
+                if (evt.getPropertyName() == LogUpdateWorker.CREATED) {
+                    Path newLogPath = (Path)evt.getNewValue();
+                    addNewTab(logFileFolder, newLogPath);
+                }
+                else if (evt.getPropertyName() == LogUpdateWorker.MODIFIED) {
+                    Path changedLogPath = (Path)evt.getNewValue();
+                    updateLog(changedLogPath);
+                }
+            }
+        };
+        logUpdateWorker.addPropertyChangeListener(logChangeListener);
+        logUpdateWorker.execute();
     }
 
     private static void sortLogFiles(List<Path> files) {
@@ -227,5 +280,56 @@ public class ErrorMessagePanel extends JPanel {
         }
 
         return builder.toString();
+    }
+
+    /**
+     * Add a new Tab when there is a new log file
+     * @param logFileFolder log folder
+     * @param newLogPath    path of the new log file
+     */
+    private void addNewTab(Path logFileFolder, Path newLogPath) {
+        logFiles.add(newLogPath);
+        sortLogFiles(logFiles);
+        int index = logFiles.indexOf(newLogPath);
+
+        String tabName = logFileFolder.relativize(newLogPath).toString();
+        final String logFileContent = readLogFileContent(newLogPath);
+        JTextArea logArea = new JTextArea();
+        logArea.setText(logFileContent);
+        textAreas.add(index,logArea);
+        tabPane.insertTab(tabName, null, new JScrollPane(logArea), null, index);
+        tabPane.updateUI();
+
+        File file = newLogPath.toFile();
+        try {
+            RandomAccessFile logReader = new RandomAccessFile(file, "r");
+            logReader.seek(file.length());
+            logReaders.add(index, logReader);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Update log information
+     * @param changedLogPath path of the changed log file
+     */
+    private void updateLog(Path changedLogPath) {
+        int index = logFiles.indexOf(changedLogPath);
+        if (index != -1) {
+            RandomAccessFile logReader = logReaders.get(index);
+            JTextArea jTextArea = textAreas.get(index);
+            try {
+                String line = logReader.readLine();
+                while (line != null) {
+                    jTextArea.append(line);
+                    jTextArea.append(System.lineSeparator());
+                    line = logReader.readLine();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        this.updateUI();
     }
 }

@@ -20,6 +20,7 @@ import javax.swing.JDialog;
 import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.WindowConstants;
 
 import org.terasology.crashreporter.GlobalProperties.KEY;
 
@@ -34,16 +35,32 @@ import java.nio.file.Path;
  */
 public final class CrashReporter {
 
+    public enum MODE {
+        CRASH_REPORTER,
+        ISSUE_REPORTER,
+        FEEDBACK
+    }
+
     private CrashReporter() {
         // don't create any instances
+    }
+
+    /**
+     * By default, it is a CrashReporter
+     * @param throwable     the exception to report
+     * @param logFileFolder the log file folder or <code>null</code>
+     */
+    public static void report(final Throwable throwable, final Path logFileFolder) {
+        report(throwable, logFileFolder, MODE.CRASH_REPORTER);
     }
 
     /**
      * Can be called from any thread.
      * @param throwable the exception to report
      * @param logFileFolder the log file folder or <code>null</code>
+     * @param mode crash reporter, issue reporter or feedback window
      */
-    public static void report(final Throwable throwable, final Path logFileFolder) {
+    public static void report(final Throwable throwable, final Path logFileFolder, final MODE mode) {
         // Swing element methods must be called in the swing thread
         try {
             SwingUtilities.invokeAndWait(new Runnable() {
@@ -57,7 +74,7 @@ public final class CrashReporter {
                         e.printStackTrace();
                     }
                     GlobalProperties properties = new GlobalProperties();
-                    showModalDialog(throwable, properties, logFileFolder);
+                    showModalDialog(throwable, properties, logFileFolder, mode);
                     try {
                         UIManager.setLookAndFeel(oldLaF);
                     } catch (Exception e) {
@@ -70,22 +87,27 @@ public final class CrashReporter {
         }
     }
 
-    protected static void showModalDialog(Throwable throwable, GlobalProperties properties, Path logFolder) {
-        String dialogTitle = I18N.getMessage("dialogTitle");
+    protected static void showModalDialog(Throwable throwable, GlobalProperties properties, Path logFolder, MODE mode) {
+        String dialogTitle;
+        switch (mode) {
+            case FEEDBACK: dialogTitle = I18N.getMessage("feedbackTitle"); break;//For future feedback use
+            case ISSUE_REPORTER: dialogTitle = I18N.getMessage("issueTitle"); break;
+            default: dialogTitle = I18N.getMessage("crashTitle"); break;
+        }
         String version = Resources.getVersion();
 
         if (version != null) {
             dialogTitle += " " + version;
         }
 
-        RootPanel panel = new RootPanel(throwable, properties, logFolder);
-        JDialog dialog = new JDialog((Dialog) null, dialogTitle, true);
+        RootPanel panel = new RootPanel(throwable, properties, logFolder, mode);
+        JDialog dialog = new JDialog((Dialog) null, dialogTitle, false);
+        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         dialog.setIconImage(Resources.loadImage(properties.get(KEY.RES_SERVER_ICON)));
         dialog.setContentPane(panel);
         dialog.setMinimumSize(new Dimension(600, 400));
         dialog.setLocationRelativeTo(null);
         dialog.setResizable(true);      // disabled by default
         dialog.setVisible(true);
-        dialog.dispose();
     }
 }
