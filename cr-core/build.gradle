@@ -54,6 +54,7 @@ dependencies {
         exclude module: 'guava-jdk5'
 
         // This exclusion avoids a crash when a newer version of jackson is needed in telemetry/snowplow (when the CR is embedded in a Terasology project)
+        // TODO: This feels more right to do via transitive dependency edit in Terasology, however while that works in Gradle it is not reflected within IntelliJ
         if (rootProject.name == "Terasology") {
             println "CrashReporter running embedded within Terasology. Excluding own dependency on jackson-core"
             exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
