@@ -1,5 +1,6 @@
 plugins {
     id "org.standardout.versioneye" version "1.3.0"
+    id "com.github.spotbugs" version "4.6.0"
 }
 
 apply plugin: 'java'
@@ -8,7 +9,7 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'checkstyle'
 apply plugin: 'pmd'
-apply plugin: 'findbugs'
+apply plugin: 'maven-publish'
 
 import java.text.SimpleDateFormat;
 
@@ -138,19 +139,70 @@ checkstyle {
 }
 
 pmd {
+    incrementalAnalysis = false
     ignoreFailures = true
     ruleSetConfig = resources.text.fromArchiveEntry(configurations.codeMetrics, "pmd/pmd.xml")
     ruleSets = []
 }
 
-findbugs {
+spotbugs {
     ignoreFailures = true
     effort = 'max'
     reportLevel = 'medium'
-    toolVersion = '3.0.1'
-    excludeFilterConfig = resources.text.fromArchiveEntry(configurations.codeMetrics, "findbugs/findbugs-exclude.xml")
+    // includeFilter = resources.text.fromArchiveEntry(configurations.codeMetrics, "findbugs/findbugs-exclude.xml")
 }
 
 javadoc {
     failOnError = false
 }
+
+publishing {
+    publications {
+        "CrashReporter"(MavenPublication) {
+            // Without this we get a .pom with no dependencies
+            from components.java
+
+            repositories {
+                maven {
+                    name = 'TerasologyOrg'
+                    allowInsecureProtocol true // 😱 - no https on our Artifactory yet
+
+                    if (rootProject.hasProperty("publishRepo")) {
+                        // This first option is good for local testing, you can set a full explicit target repo in gradle.properties
+                        url = "http://artifactory.terasology.org/artifactory/$publishRepo"
+
+                        logger.info("Changing PUBLISH repoKey set via Gradle property to {}", publishRepo)
+                    } else {
+                        // Support override from the environment to use a different target publish org
+                        String deducedPublishRepo = System.getenv()["PUBLISH_ORG"]
+                        if (deducedPublishRepo == null || deducedPublishRepo == "") {
+                            // If not then default
+                            deducedPublishRepo = "libs"
+                        }
+
+                        // Base final publish repo on whether we're building a snapshot or a release
+                        if (project.version.endsWith('SNAPSHOT')) {
+                            deducedPublishRepo += "-snapshot-local"
+                        } else {
+                            deducedPublishRepo += "-release-local"
+                        }
+
+                        logger.info("The final deduced publish repo is {}", deducedPublishRepo)
+                        url = "http://artifactory.terasology.org/artifactory/$deducedPublishRepo"
+                    }
+
+                    if (rootProject.hasProperty("mavenUser") && rootProject.hasProperty("mavenPass")) {
+                        credentials {
+                            username = "$mavenUser"
+                            password = "$mavenPass"
+                        }
+                        authentication {
+                            basic(BasicAuthentication)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
