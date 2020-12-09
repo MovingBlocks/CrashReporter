@@ -13,6 +13,19 @@ pipeline {
                 sh './gradlew --info --console=plain javadoc check'
             }
         }
+        stage('Publish') {
+            when {
+                anyOf {
+                    branch 'master'
+                    branch pattern: "release/v\\d+.x", comparator: "REGEXP"
+                }
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'artifactory-gooey', usernameVariable: 'artifactoryUser', passwordVariable: 'artifactoryPass')]) {
+                    sh './gradlew --info --console=plain -Dorg.gradle.internal.publish.checksums.insecure=true publish -PmavenUser=${artifactoryUser} -PmavenPass=${artifactoryPass}'
+                }
+            }
+        }
         stage('Record') {
             steps {
                 junit testResults: '**/build/test-results/test/*.xml',  allowEmptyResults: true
