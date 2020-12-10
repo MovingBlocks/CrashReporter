@@ -11,3 +11,5 @@ dependencies {
     println "cr-terasology is setting its cr-core dependency using path " + crCorePath
     compile project(crCorePath)
 }
+
+apply from: "$rootDir/gradle/common.gradle"
