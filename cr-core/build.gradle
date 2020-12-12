@@ -1,5 +1,6 @@
 plugins {
     id "org.standardout.versioneye" version "1.3.0"
+    id "com.github.spotbugs" version "4.6.0"
 }
 
 apply plugin: 'java'
@@ -8,7 +9,9 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'checkstyle'
 apply plugin: 'pmd'
-apply plugin: 'findbugs'
+apply plugin: 'maven-publish'
+
+apply from: "$rootDir/gradle/common.gradle"
 
 import java.text.SimpleDateFormat;
 
@@ -43,16 +46,30 @@ dependencies {
     compile group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.5.2'
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile group: 'org.mockito', name: 'mockito-all', version: '1.10.19'
+    compile group: 'org.mockito', name: 'mockito-core', version: '2.7.22'
     testCompile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.21'
 
     testRuntime group: 'ch.qos.logback', name: 'logback-classic', version: '1.1.7'
 
     compile group: 'com.google.guava', name: 'guava', version: '19.0'
+
     compile ('com.google.apis:google-api-services-drive:v2-rev193-1.20.0') {
         // This exclusion avoids a dependency clash against newer versions of Guava in projects using the CR
         exclude module: 'guava-jdk5'
+
+        // This exclusion avoids a crash when a newer version of jackson is needed in telemetry/snowplow (when the CR is embedded in a Terasology project)
+        // TODO: This feels more right to do via transitive dependency edit in Terasology, however while that works in Gradle it is not reflected within IntelliJ
+        if (rootProject.name == "Terasology") {
+            println "CrashReporter running embedded within Terasology. Excluding own dependency on jackson-core"
+            exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
+        }
     }
+
+    // But on the other hand to be able to run the unit tests successfully while embedded we still do need this
+    if (rootProject.name == "Terasology") {
+        testCompile group: 'com.google.http-client', name: 'google-http-client-jackson2', version: '1.20.0'
+    }
+
     //compile 'com.google.oauth-client:google-oauth-client-java6:1.19.0'
     //compile 'com.google.oauth-client:google-oauth-client-jetty:1.19.0'
 }
@@ -124,19 +141,21 @@ checkstyle {
 }
 
 pmd {
+    incrementalAnalysis = false
     ignoreFailures = true
     ruleSetConfig = resources.text.fromArchiveEntry(configurations.codeMetrics, "pmd/pmd.xml")
     ruleSets = []
 }
 
-findbugs {
+spotbugs {
     ignoreFailures = true
     effort = 'max'
     reportLevel = 'medium'
-    toolVersion = '3.0.1'
-    excludeFilterConfig = resources.text.fromArchiveEntry(configurations.codeMetrics, "findbugs/findbugs-exclude.xml")
+    // includeFilter = resources.text.fromArchiveEntry(configurations.codeMetrics, "findbugs/findbugs-exclude.xml")
 }
 
 javadoc {
     failOnError = false
 }
+
+

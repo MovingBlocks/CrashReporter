@@ -1,8 +1,8 @@
 // For generating IntelliJ project files
 apply plugin: 'idea'
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.9'
+wrapper {
+    gradleVersion = '6.5'
 }
 
 // Using this instead of allprojects allows this project to be embedded yet not affect parent projects
