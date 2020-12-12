@@ -1,5 +1,6 @@
 plugins {
     id "org.standardout.versioneye" version "1.3.0"
+    id "com.github.spotbugs" version "4.6.0"
 }
 
 apply plugin: 'java'
@@ -8,7 +9,9 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'checkstyle'
 apply plugin: 'pmd'
-apply plugin: 'findbugs'
+apply plugin: 'maven-publish'
+
+apply from: "$rootDir/gradle/common.gradle"
 
 import java.text.SimpleDateFormat;
 
@@ -138,19 +141,21 @@ checkstyle {
 }
 
 pmd {
+    incrementalAnalysis = false
     ignoreFailures = true
     ruleSetConfig = resources.text.fromArchiveEntry(configurations.codeMetrics, "pmd/pmd.xml")
     ruleSets = []
 }
 
-findbugs {
+spotbugs {
     ignoreFailures = true
     effort = 'max'
     reportLevel = 'medium'
-    toolVersion = '3.0.1'
-    excludeFilterConfig = resources.text.fromArchiveEntry(configurations.codeMetrics, "findbugs/findbugs-exclude.xml")
+    // includeFilter = resources.text.fromArchiveEntry(configurations.codeMetrics, "findbugs/findbugs-exclude.xml")
 }
 
 javadoc {
     failOnError = false
 }
+
+
