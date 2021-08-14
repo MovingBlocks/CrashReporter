@@ -29,7 +29,7 @@ public final class GlobalProperties {
 
     public enum KEY {
         SUPPORT_FORUM_LINK,
-        JOIN_IRC_LINK,
+        JOIN_DISCORD_LINK,
         REPORT_ISSUE_LINK,
 
         RES_BANNER_IMAGE,
@@ -46,8 +46,8 @@ public final class GlobalProperties {
         RES_FINAL_TITLE_IMAGE,
         RES_UPLOAD_TITLE_IMAGE,
         RES_GITHUB_ICON,
-        RES_IRC_ICON,
-        RES_FORUM_ICON
+        RES_FORUM_ICON,
+        RES_DISCORD_ICON
     }
 
     public GlobalProperties() {

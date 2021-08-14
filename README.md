@@ -3,7 +3,7 @@
 [![Build Status](http://jenkins.terasology.org/view/Ext/job/CrashReporter/badge/icon)](http://jenkins.terasology.org/view/Ext/job/CrashReporter/)
 [![Release](https://img.shields.io/github/release/MovingBlocks/CrashReporter.svg)](../../releases/latest)
 [![License(code)](https://img.shields.io/badge/license(code)-Apache%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-[![IRC Channel](https://img.shields.io/badge/irc-%23terasology-blue.svg "IRC Channel")](https://webchat.freenode.net/?channels=terasology)
+[![Discord Server](https://img.shields.io/badge/discord-%23terasology-blue.svg "Discord Server")](https://discord.gg/terasology)
 
 **A crash reporting tool**
 
