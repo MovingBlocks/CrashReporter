@@ -13,6 +13,9 @@ apply plugin: 'maven-publish'
 
 apply from: "$rootDir/gradle/common.gradle"
 
+// Copyright 2021 The Terasology Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 import java.text.SimpleDateFormat;
 
 def env = System.getenv()

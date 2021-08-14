@@ -1,5 +1,8 @@
 #!/usr/bin/env sh
 
+# Copyright 2021 The Terasology Foundation
+# SPDX-License-Identifier: Apache-2.0
+
 ##############################################################################
 ##
 ##  Gradle start up script for UN*X
