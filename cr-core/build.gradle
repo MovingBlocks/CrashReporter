@@ -102,13 +102,13 @@ jar.dependsOn createVersionInfoFile
 task sourceJar(type: Jar) {
     description = "Create a JAR with all sources"
     from sourceSets.main.allSource
-    classifier = 'sources'
+    archiveClassifier = "sources"
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
     description = "Create a JAR with the JavaDoc for the java sources"
     from javadoc.destinationDir
-    classifier = 'javadoc'
+    archiveClassifier = "javadoc"
 }
 
 task runInteractiveTest(type: JavaExec, dependsOn: testClasses) {
@@ -156,5 +156,3 @@ spotbugs {
 javadoc {
     failOnError = false
 }
-
-
