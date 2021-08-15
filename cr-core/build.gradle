@@ -26,9 +26,14 @@ targetCompatibility = 1.8
 
 // We use both Maven Central and our own Artifactory instance, which contains module builds, extra libs, and so on
 repositories {
+    maven {
+        name "Terasology Artifactory"
+        url "http://artifactory.terasology.org:8081/artifactory/virtual-repo-live"
+    }
     mavenCentral()
     maven {
-        url "http://artifactory.terasology.org:8081/artifactory/virtual-repo-live"
+        name "JBoss Public Maven Repository Group"
+        url "https://repository.jboss.org/nexus/content/repositories/public/"
     }
 }
 
@@ -44,7 +49,7 @@ dependencies {
     pmd ('net.sourceforge.pmd:pmd-core:5.4.1')
     pmd ('net.sourceforge.pmd:pmd-java:5.4.1')
 
-    compile group: 'brianbb', name: 'jpastebin', version: '1.0.0'
+    compile group: 'org', name: 'jpastebin', version: '1.0.1'
     compile group: 'org.apache.httpcomponents', name: 'httpcomponents-client', version: '4.5.2'
     compile group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.5.2'
 
