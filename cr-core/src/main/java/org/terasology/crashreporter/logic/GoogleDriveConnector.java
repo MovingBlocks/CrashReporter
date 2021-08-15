@@ -175,7 +175,7 @@ public class GoogleDriveConnector {
     }
 
     private static PrivateKey getPrivateKey() throws IOException, GeneralSecurityException {
-        URL website = new URL("http://jenkins.terasology.org/userContent/GooeyDrive-24506b2f1f34.p12");
+        URL website = new URL("https://jenkins.terasology.io/cjoc/userContent/gooey-drive-371f4f7d4d08.p12");
 
         try (InputStream keyStream = website.openStream()) {
             return SecurityUtils.loadPrivateKeyFromKeyStore(
