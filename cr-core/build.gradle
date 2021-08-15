@@ -26,8 +26,25 @@ targetCompatibility = 1.8
 
 // We use both Maven Central and our own Artifactory instance, which contains module builds, extra libs, and so on
 repositories {
-    mavenCentral()
+    mavenCentral {
+        content {
+            // This is first choice for most java dependencies, but assume we'll need to check our
+            // own repository for things from our own organization.
+            // (This is an optimization so gradle doesn't try to find our hundreds of modules in 3rd party repos)
+            excludeGroupByRegex("org.terasology(..+)?")
+        }
+    }
+    // JBoss Maven Repository requried to fetch `org.jpastebin` dependency for CrashReporter
+    // https://developer.jboss.org/docs/DOC-11377
     maven {
+        name "JBoss Public Maven Repository Group"
+        url "https://repository.jboss.org/nexus/content/repositories/public/"
+        content {
+            includeModule("org", "jpastebin")
+        }
+    }
+    maven {
+        name "Terasology Artifactory"
         url "http://artifactory.terasology.org:8081/artifactory/virtual-repo-live"
     }
 }
@@ -44,7 +61,7 @@ dependencies {
     pmd ('net.sourceforge.pmd:pmd-core:5.4.1')
     pmd ('net.sourceforge.pmd:pmd-java:5.4.1')
 
-    compile group: 'brianbb', name: 'jpastebin', version: '1.0.0'
+    compile group: 'org', name: 'jpastebin', version: '1.0.1'
     compile group: 'org.apache.httpcomponents', name: 'httpcomponents-client', version: '4.5.2'
     compile group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.5.2'
 

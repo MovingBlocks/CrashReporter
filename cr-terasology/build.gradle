@@ -6,6 +6,18 @@ apply plugin: 'maven'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
+repositories {
+    maven {
+        name "Terasology Artifactory"
+        url "http://artifactory.terasology.org:8081/artifactory/virtual-repo-live"
+    }
+    mavenCentral()
+    maven {
+        name "JBoss Public Maven Repository Group"
+        url "https://repository.jboss.org/nexus/content/repositories/public/"
+    }
+}
+
 dependencies {
     // Using the parent's path here to allow the CR to be embedded deeper in a Terasology workspace
     String crCorePath = parent.path + ":cr-core"
@@ -13,6 +25,10 @@ dependencies {
     crCorePath = crCorePath.replaceAll('::', ':')
     println "cr-terasology is setting its cr-core dependency using path " + crCorePath
     compile project(crCorePath)
+}
+
+java {
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 apply from: "$rootDir/gradle/common.gradle"

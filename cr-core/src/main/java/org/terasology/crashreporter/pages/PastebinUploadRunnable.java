@@ -3,11 +3,11 @@
 
 package org.terasology.crashreporter.pages;
 
-import org.jpaste.exceptions.PasteException;
-import org.jpaste.pastebin.PasteExpireDate;
-import org.jpaste.pastebin.Pastebin;
-import org.jpaste.pastebin.PastebinLink;
-import org.jpaste.pastebin.PastebinPaste;
+import org.jpastebin.exceptions.PasteException;
+import org.jpastebin.pastebin.PasteExpireDate;
+import org.jpastebin.pastebin.Pastebin;
+import org.jpastebin.pastebin.PastebinLink;
+import org.jpastebin.pastebin.PastebinPaste;
 
 import java.net.URL;
 import java.util.concurrent.Callable;
