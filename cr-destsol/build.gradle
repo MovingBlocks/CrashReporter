@@ -9,12 +9,7 @@ plugins {
 }
 
 dependencies {
-    // Using the parent's path here to allow the CR to be embedded deeper in a Terasology workspace
-    String crCorePath = parent.path + ":cr-core"
-    // If we're in a standalone workspace we'll end up with "::cr-core" so fix real quick
-    crCorePath = crCorePath.replaceAll('::', ':')
-    println "cr-destsol is setting its cr-core dependency using path " + crCorePath
-    compile project(crCorePath)
+    api project(":cr-core")
 }
 
 apply from: "$rootDir/gradle/common.gradle"

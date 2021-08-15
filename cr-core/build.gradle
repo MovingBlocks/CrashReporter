@@ -43,19 +43,19 @@ dependencies {
     pmd ('net.sourceforge.pmd:pmd-core:5.4.1')
     pmd ('net.sourceforge.pmd:pmd-java:5.4.1')
 
-    compile group: 'brianbb', name: 'jpastebin', version: '1.0.0'
-    compile group: 'org.apache.httpcomponents', name: 'httpcomponents-client', version: '4.5.2'
-    compile group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.5.2'
+    implementation group: 'brianbb', name: 'jpastebin', version: '1.0.0'
+    implementation group: 'org.apache.httpcomponents', name: 'httpcomponents-client', version: '4.5.2'
+    implementation group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.5.2'
 
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    compile group: 'org.mockito', name: 'mockito-core', version: '2.7.22'
-    testCompile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.21'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.7.22'
+    testImplementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.21'
 
-    testRuntime group: 'ch.qos.logback', name: 'logback-classic', version: '1.1.7'
+    testRuntimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: '1.1.7'
 
-    compile group: 'com.google.guava', name: 'guava', version: '19.0'
+    implementation group: 'com.google.guava', name: 'guava', version: '19.0'
 
-    compile ('com.google.apis:google-api-services-drive:v2-rev193-1.20.0') {
+    implementation ('com.google.apis:google-api-services-drive:v2-rev193-1.20.0') {
         // This exclusion avoids a dependency clash against newer versions of Guava in projects using the CR
         exclude module: 'guava-jdk5'
 
@@ -69,11 +69,8 @@ dependencies {
 
     // But on the other hand to be able to run the unit tests successfully while embedded we still do need this
     if (rootProject.name == "Terasology") {
-        testCompile group: 'com.google.http-client', name: 'google-http-client-jackson2', version: '1.20.0'
+        testImplementation group: 'com.google.http-client', name: 'google-http-client-jackson2', version: '1.20.0'
     }
-
-    //compile 'com.google.oauth-client:google-oauth-client-java6:1.19.0'
-    //compile 'com.google.oauth-client:google-oauth-client-jetty:1.19.0'
 }
 
 def convertGitBranch = { gitBranch ->
