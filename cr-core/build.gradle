@@ -31,7 +31,7 @@ repositories {
             // This is first choice for most java dependencies, but assume we'll need to check our
             // own repository for things from our own organization.
             // (This is an optimization so gradle doesn't try to find our hundreds of modules in 3rd party repos)
-            excludeGroupByRegex("""org\.terasology(\..+)?""")
+            excludeGroupByRegex("org.terasology(..+)?")
         }
     }
     // JBoss Maven Repository requried to fetch `org.jpastebin` dependency for CrashReporter
