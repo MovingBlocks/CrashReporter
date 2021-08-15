@@ -12,6 +12,7 @@ build/
 *.iml
 *.ipr
 *.iws
+out/
 
 # Log Output
 details.log
