@@ -22,6 +22,7 @@ import com.google.api.services.drive.Drive.Files;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
+import com.google.api.services.drive.model.ParentReference;
 import com.google.api.services.drive.model.Permission;
 
 import java.io.FileOutputStream;
@@ -32,6 +33,7 @@ import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -175,7 +177,10 @@ public class GoogleDriveConnector {
     }
 
     private static PrivateKey getPrivateKey() throws IOException, GeneralSecurityException {
-        URL website = new URL("http://jenkins.terasology.org/userContent/GooeyDrive-24506b2f1f34.p12");
+        // fetch the key of the service account used for the Google Drive API
+        // key is deployed as k8s secret and mounted into Jenkins userContent directory
+        // key file can be managed/rotated via Google Cloud Platform
+        URL website = new URL("https://jenkins.terasology.io/cjoc/userContent/gooey-drive-371f4f7d4d08.p12");
 
         try (InputStream keyStream = website.openStream()) {
             return SecurityUtils.loadPrivateKeyFromKeyStore(
@@ -186,12 +191,18 @@ public class GoogleDriveConnector {
     }
 
     private File uploadFile(AbstractInputStreamContent content, String name, boolean useDirectUpload) throws IOException {
+        ParentReference parent = new ParentReference();
+        // id of Terasology Google Drive folder shared with service account Google Drive
+        parent.setId("19pDHxle0sDArV40mfU9Xui2oEJnUS5qa");
+
         File fileMetadata = new File();
         fileMetadata.setTitle(name);
+        fileMetadata.setParents(Arrays.asList(parent));
 
         Drive.Files.Insert insert = drive.files().insert(fileMetadata, content);
         MediaHttpUploader uploader = insert.getMediaHttpUploader();
         uploader.setDirectUploadEnabled(useDirectUpload);
+        insert.set("supportsAllDrives", "true");
         return insert.execute();
     }
 }

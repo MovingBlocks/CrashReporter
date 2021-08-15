@@ -8,8 +8,24 @@ plugins {
     id "idea"
 }
 
+repositories {
+    maven {
+        name "Terasology Artifactory"
+        url "http://artifactory.terasology.org:8081/artifactory/virtual-repo-live"
+    }
+    mavenCentral()
+    maven {
+        name "JBoss Public Maven Repository Group"
+        url "https://repository.jboss.org/nexus/content/repositories/public/"
+    }
+}
+
 dependencies {
     api project(":cr-core")
+}
+
+java {
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 apply from: "$rootDir/gradle/common.gradle"
