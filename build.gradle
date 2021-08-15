@@ -1,8 +1,11 @@
+// Copyright 2021 The Terasology Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 // For generating IntelliJ project files
 apply plugin: 'idea'
 
 wrapper {
-    gradleVersion = '6.5'
+    gradleVersion = '6.8.2'
 }
 
 // Using this instead of allprojects allows this project to be embedded yet not affect parent projects

@@ -1,18 +1,5 @@
-/*
- * Copyright 2015 MovingBlocks
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Copyright 2021 The Terasology Foundation
+// SPDX-License-Identifier: Apache-2.0
 
 package org.terasology.crashreporter.pages;
 
@@ -80,35 +67,20 @@ public class FinalActionsPanel extends JPanel {
 
         Font buttonFont = getFont().deriveFont(Font.BOLD).deriveFont(14f);
 
-        JButton forumButton = new JButton(I18N.getMessage("gotoForum"));
-        forumButton.setIcon(Resources.loadIcon(properties.get(KEY.RES_FORUM_ICON)));
-        forumButton.setFont(buttonFont);
-        forumButton.addActionListener(new ActionListener() {
+        JButton joinDiscord = new JButton(I18N.getMessage("joinDiscord"));
+        joinDiscord.setFont(buttonFont);
+        joinDiscord.setIcon(Resources.loadIcon(properties.get(KEY.RES_DISCORD_ICON)));
+        joinDiscord.addActionListener(new ActionListener() {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                openInBrowser(properties.get(KEY.SUPPORT_FORUM_LINK));
+                openInBrowser(properties.get(KEY.JOIN_DISCORD_LINK));
                 pageComplete = true;
                 firePropertyChange("pageComplete", !pageComplete, pageComplete);
             }
         });
-        forumButton.setToolTipText(properties.get(KEY.SUPPORT_FORUM_LINK));
-        gridPanel.add(forumButton);
-
-        JButton enterIrc = new JButton(I18N.getMessage("joinIrc"));
-        enterIrc.setFont(buttonFont);
-        enterIrc.setIcon(Resources.loadIcon(properties.get(KEY.RES_IRC_ICON)));
-        enterIrc.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                openInBrowser(properties.get(KEY.JOIN_IRC_LINK));
-                pageComplete = true;
-                firePropertyChange("pageComplete", !pageComplete, pageComplete);
-            }
-        });
-        enterIrc.setToolTipText(properties.get(KEY.JOIN_IRC_LINK));
-        gridPanel.add(enterIrc);
+        joinDiscord.setToolTipText(properties.get(KEY.JOIN_DISCORD_LINK));
+        gridPanel.add(joinDiscord);
 
         JButton githubIssueButton = new JButton(I18N.getMessage("reportIssue"));
         githubIssueButton.setFont(buttonFont);
@@ -124,6 +96,21 @@ public class FinalActionsPanel extends JPanel {
         });
         githubIssueButton.setToolTipText(properties.get(KEY.REPORT_ISSUE_LINK));
         gridPanel.add(githubIssueButton);
+
+        JButton forumButton = new JButton(I18N.getMessage("gotoForum"));
+        forumButton.setIcon(Resources.loadIcon(properties.get(KEY.RES_FORUM_ICON)));
+        forumButton.setFont(buttonFont);
+        forumButton.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                openInBrowser(properties.get(KEY.SUPPORT_FORUM_LINK));
+                pageComplete = true;
+                firePropertyChange("pageComplete", !pageComplete, pageComplete);
+            }
+        });
+        forumButton.setToolTipText(properties.get(KEY.SUPPORT_FORUM_LINK));
+        gridPanel.add(forumButton);
 
         add(gridPanel, BorderLayout.CENTER);
 

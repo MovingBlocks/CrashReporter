@@ -1,18 +1,5 @@
-/*
- * Copyright 2016 MovingBlocks
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Copyright 2021 The Terasology Foundation
+// SPDX-License-Identifier: Apache-2.0
 
 package org.terasology.crashreporter;
 
@@ -29,7 +16,7 @@ public final class GlobalProperties {
 
     public enum KEY {
         SUPPORT_FORUM_LINK,
-        JOIN_IRC_LINK,
+        JOIN_DISCORD_LINK,
         REPORT_ISSUE_LINK,
 
         RES_BANNER_IMAGE,
@@ -46,8 +33,8 @@ public final class GlobalProperties {
         RES_FINAL_TITLE_IMAGE,
         RES_UPLOAD_TITLE_IMAGE,
         RES_GITHUB_ICON,
-        RES_IRC_ICON,
-        RES_FORUM_ICON
+        RES_FORUM_ICON,
+        RES_DISCORD_ICON
     }
 
     public GlobalProperties() {

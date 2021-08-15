@@ -1,4 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2021 The Terasology Foundation -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 <configuration>
 
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
