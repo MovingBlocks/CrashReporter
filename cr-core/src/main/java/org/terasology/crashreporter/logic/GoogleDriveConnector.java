@@ -177,6 +177,9 @@ public class GoogleDriveConnector {
     }
 
     private static PrivateKey getPrivateKey() throws IOException, GeneralSecurityException {
+        // fetch the key of the service account used for the Google Drive API
+        // key is deployed as k8s secret and mounted into Jenkins userContent directory
+        // key file can be managed/rotated via Google Cloud Platform
         URL website = new URL("https://jenkins.terasology.io/cjoc/userContent/gooey-drive-371f4f7d4d08.p12");
 
         try (InputStream keyStream = website.openStream()) {
@@ -189,6 +192,7 @@ public class GoogleDriveConnector {
 
     private File uploadFile(AbstractInputStreamContent content, String name, boolean useDirectUpload) throws IOException {
         ParentReference parent = new ParentReference();
+        // id of Terasology Google Drive folder shared with service account Google Drive
         parent.setId("19pDHxle0sDArV40mfU9Xui2oEJnUS5qa");
 
         File fileMetadata = new File();

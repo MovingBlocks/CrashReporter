@@ -31,6 +31,8 @@ repositories {
         url "http://artifactory.terasology.org:8081/artifactory/virtual-repo-live"
     }
     mavenCentral()
+    // JBoss Maven Repository requried to fetch `org.jpastebin` dependency for CrashReporter
+    // https://developer.jboss.org/docs/DOC-11377
     maven {
         name "JBoss Public Maven Repository Group"
         url "https://repository.jboss.org/nexus/content/repositories/public/"
