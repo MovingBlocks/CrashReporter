@@ -5,7 +5,7 @@
 apply plugin: 'idea'
 
 wrapper {
-    gradleVersion = '6.8.2'
+    gradleVersion = '8.2'
 }
 
 // Using this instead of allprojects allows this project to be embedded yet not affect parent projects
