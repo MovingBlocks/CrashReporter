@@ -6,23 +6,19 @@ package org.terasology.crashreporter.logic;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.googleapis.media.MediaHttpDownloader;
 import com.google.api.client.googleapis.media.MediaHttpUploader;
 import com.google.api.client.http.AbstractInputStreamContent;
 import com.google.api.client.http.FileContent;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.SecurityUtils;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.Drive.Files;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
-import com.google.api.services.drive.model.ParentReference;
 import com.google.api.services.drive.model.Permission;
 
 import java.io.FileOutputStream;
@@ -33,7 +29,6 @@ import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -48,10 +43,16 @@ public class GoogleDriveConnector {
    */
   private static final String APPLICATION_NAME = "Terasology-GooeyDrive/1.0";
 
+  private static final String UPLOADED_FILES_DIRECTORY = "19pDHxle0sDArV40mfU9Xui2oEJnUS5qa";
+
+  private static final String DRIVE_SERVICE_ACCOUNT = "454164381957-9fnum5600ia5bp94jgkmbrrlhicjb1vo@developer.gserviceaccount.com";
+
+  private static final String DRIVE_SERVICE_ACCOUNT_KEY_URL = "https://jenkins.terasology.io/cjoc/userContent/gooey-drive-371f4f7d4d08.p12";
+
   /**
    * Global instance of the JSON factory.
    */
-  private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+  private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
   /**
    * Global instance of the HTTP transport.
@@ -111,10 +112,10 @@ public class GoogleDriveConnector {
     public void setPermission(String fileId, String value, String type, String role) throws IOException {
         Permission newPermission = new Permission();
 
-        newPermission.setValue(value);
+        newPermission.setEmailAddress(value);
         newPermission.setType(type);
         newPermission.setRole(role);
-        drive.permissions().insert(fileId, newPermission).execute();
+        drive.permissions().create(fileId, newPermission).execute();
     }
 
     /**
@@ -125,13 +126,10 @@ public class GoogleDriveConnector {
      * @throws IOException if the download fails
      */
     public void downloadToFile(File file, java.io.File localFolder, boolean useDirectDownload) throws IOException {
-
-        java.io.File localFile = new java.io.File(localFolder, file.getOriginalFilename());
+        String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename() : file.getName();
+        java.io.File localFile = new java.io.File(localFolder, fileName);
         try (OutputStream out = new FileOutputStream(localFile)) {
-            HttpRequestInitializer initializer = drive.getRequestFactory().getInitializer();
-            MediaHttpDownloader downloader = new MediaHttpDownloader(httpTransport, initializer);
-            downloader.setDirectDownloadEnabled(useDirectDownload);
-            downloader.download(new GenericUrl(file.getDownloadUrl()), out);
+            drive.files().get(file.getId()).executeMediaAndDownloadTo(out);
         }
     }
 
@@ -154,7 +152,7 @@ public class GoogleDriveConnector {
 
       do {
           FileList files = request.execute();
-          result.addAll(files.getItems());
+          result.addAll(files.getFiles());
           token = files.getNextPageToken();
           request.setPageToken(token);
       } while (token != null && token.length() > 0);
@@ -168,7 +166,7 @@ public class GoogleDriveConnector {
 
         GoogleCredential credential = new GoogleCredential.Builder().setTransport(httpTransport)
                 .setJsonFactory(JSON_FACTORY)
-                .setServiceAccountId("454164381957-9fnum5600ia5bp94jgkmbrrlhicjb1vo@developer.gserviceaccount.com")
+                .setServiceAccountId(DRIVE_SERVICE_ACCOUNT)
                 .setServiceAccountScopes(Collections.singleton(DriveScopes.DRIVE))
                 .setServiceAccountPrivateKey(serviceAccountPrivateKey)
                 .build();
@@ -180,8 +178,7 @@ public class GoogleDriveConnector {
         // fetch the key of the service account used for the Google Drive API
         // key is deployed as k8s secret and mounted into Jenkins userContent directory
         // key file can be managed/rotated via Google Cloud Platform
-        URL website = new URL("https://jenkins.terasology.io/cjoc/userContent/gooey-drive-371f4f7d4d08.p12");
-
+        URL website = new URL(DRIVE_SERVICE_ACCOUNT_KEY_URL);
         try (InputStream keyStream = website.openStream()) {
             return SecurityUtils.loadPrivateKeyFromKeyStore(
                     SecurityUtils.getPkcs12KeyStore(),
@@ -191,18 +188,14 @@ public class GoogleDriveConnector {
     }
 
     private File uploadFile(AbstractInputStreamContent content, String name, boolean useDirectUpload) throws IOException {
-        ParentReference parent = new ParentReference();
-        // id of Terasology Google Drive folder shared with service account Google Drive
-        parent.setId("19pDHxle0sDArV40mfU9Xui2oEJnUS5qa");
-
         File fileMetadata = new File();
-        fileMetadata.setTitle(name);
-        fileMetadata.setParents(Arrays.asList(parent));
+        fileMetadata.setName(name);
+        fileMetadata.setParents(Collections.singletonList(UPLOADED_FILES_DIRECTORY));
 
-        Drive.Files.Insert insert = drive.files().insert(fileMetadata, content);
+        Drive.Files.Create insert = drive.files().create(fileMetadata, content);
         MediaHttpUploader uploader = insert.getMediaHttpUploader();
         uploader.setDirectUploadEnabled(useDirectUpload);
-        insert.set("supportsAllDrives", "true");
+        insert.set("supportsAllDrives", true);
         return insert.execute();
     }
 }

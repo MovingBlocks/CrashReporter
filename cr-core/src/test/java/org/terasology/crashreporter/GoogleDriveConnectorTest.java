@@ -4,6 +4,7 @@
 package org.terasology.crashreporter;
 
 import com.google.api.services.drive.model.File;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -13,7 +14,11 @@ import org.slf4j.LoggerFactory;
 import org.terasology.crashreporter.logic.GoogleDriveConnector;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.security.GeneralSecurityException;
+import java.util.Collections;
 
 public class GoogleDriveConnectorTest {
 
@@ -32,7 +37,7 @@ public class GoogleDriveConnectorTest {
     @Test
     public void listingTest() throws IOException {
         for (File f : gdrive.retrieveAllFiles()) {
-            logger.info("Found file: {} - {} bytes: {}", f.getOriginalFilename(), f.getFileSize(),  f.getWebContentLink());
+            logger.info("Found file: {} - {} bytes: {}", f.getOriginalFilename(), f.getSize(), f.getWebContentLink());
         }
     }
 
@@ -43,5 +48,15 @@ public class GoogleDriveConnectorTest {
 
         File bannerTextImage = gdrive.getFileForID(id);
         gdrive.downloadToFile(bannerTextImage, tempFolder, true);
+    }
+
+    @Test
+    public void uploadTest() throws IOException {
+        java.io.File tempFile = testFolder.newFile();
+        Files.write(tempFile.toPath(), Collections.singletonList("This is a test file."), StandardOpenOption.WRITE);
+        try (InputStream stream = Files.newInputStream(tempFile.toPath())) {
+            File uploadedFile = gdrive.uploadFile(stream, tempFile.getName(), true);
+            Assert.assertNotNull(uploadedFile);
+        }
     }
 }
