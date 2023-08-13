@@ -38,7 +38,6 @@ public class UploadPanel extends JPanel {
     private static final long serialVersionUID = -8247883237201535146L;
 
     private JButton uploadPasteBinButton;
-    private JButton uploadGDriveButton;
     private boolean isComplete;
     private URL uploadURL;
 
@@ -75,28 +74,12 @@ public class UploadPanel extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 statusLabel.setText(I18N.getMessage("waitForUpload"));
                 uploadPasteBinButton.setEnabled(false);
-                uploadGDriveButton.setEnabled(false);
 
                 String text = textSupplier.get();
                 upload(new PastebinUploadRunnable(text));
             }
         });
         hosterPanel.add(uploadPasteBinButton);
-
-        uploadGDriveButton = new JButton("Google Drive", Resources.loadIcon(properties.get(KEY.RES_GDRIVE_ICON)));
-        uploadGDriveButton.setFont(buttonFont);
-        uploadGDriveButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                statusLabel.setText(I18N.getMessage("waitForUpload"));
-                uploadGDriveButton.setEnabled(false);
-                uploadPasteBinButton.setEnabled(false);
-
-                String text = textSupplier.get();
-                upload(new GDriveUploadRunnable(text));
-            }
-        });
-        hosterPanel.add(uploadGDriveButton);
 
         uploadSkipButton = new JButton(I18N.getMessage("skipUpload"),
                 Resources.loadIcon(properties.get(KEY.RES_SKIP_UPLOAD_ICON)));
@@ -178,7 +161,6 @@ public class UploadPanel extends JPanel {
                 uploadURL = link;
                 updateStatus();
                 uploadSkipButton.setEnabled(false);
-                uploadGDriveButton.setEnabled(true);
                 uploadPasteBinButton.setEnabled(true);
                 firePropertyChange("pageComplete", Boolean.FALSE, Boolean.TRUE);
                 isComplete = true;
@@ -193,7 +175,6 @@ public class UploadPanel extends JPanel {
             public void run() {
                 String uploadFailed = I18N.getMessage("uploadFailed");
                 JOptionPane.showMessageDialog(null, e.getLocalizedMessage(), uploadFailed, JOptionPane.ERROR_MESSAGE);
-                uploadGDriveButton.setEnabled(true);
                 uploadPasteBinButton.setEnabled(true);
                 updateStatus();
             }
