@@ -27,7 +27,6 @@ public final class GlobalProperties {
         RES_ERROR_TITLE_IMAGE,
         RES_INFO_TITLE_IMAGE,
         RES_PASTEBIN_ICON,
-        RES_GDRIVE_ICON,
         RES_SKIP_UPLOAD_ICON,
         RES_COPY_ICON,
         RES_FINAL_TITLE_IMAGE,

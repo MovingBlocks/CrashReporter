@@ -70,18 +70,6 @@ dependencies {
 
     implementation group: 'com.google.guava', name: 'guava', version: '19.0'
 
-    implementation ('com.google.apis:google-api-services-drive:v2-rev193-1.20.0') {
-        // This exclusion avoids a dependency clash against newer versions of Guava in projects using the CR
-        exclude module: 'guava-jdk5'
-
-        // This exclusion avoids a crash when a newer version of jackson is needed in telemetry/snowplow (when the CR is embedded in a Terasology project)
-        // TODO: This feels more right to do via transitive dependency edit in Terasology, however while that works in Gradle it is not reflected within IntelliJ
-        if (rootProject.name == "Terasology") {
-            println "CrashReporter running embedded within Terasology. Excluding own dependency on jackson-core"
-            exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
-        }
-    }
-
     // But on the other hand to be able to run the unit tests successfully while embedded we still do need this
     if (rootProject.name == "Terasology") {
         testImplementation group: 'com.google.http-client', name: 'google-http-client-jackson2', version: '1.20.0'
