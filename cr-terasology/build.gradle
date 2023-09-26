@@ -11,7 +11,7 @@ plugins {
 repositories {
     maven {
         name "Terasology Artifactory"
-        url "http://artifactory.terasology.org:8081/artifactory/virtual-repo-live"
+        url "https://artifactory.terasology.io/artifactory/virtual-repo-live"
     }
     mavenCentral()
     maven {

@@ -41,8 +41,7 @@ repositories {
     }
     maven {
         name "Terasology Artifactory"
-        url "http://artifactory.terasology.org:8081/artifactory/virtual-repo-live"
-        allowInsecureProtocol true  // 😱
+        url "https://artifactory.terasology.io/artifactory/virtual-repo-live"
     }
 }
 
@@ -126,7 +125,7 @@ artifacts {
     archives javadocJar
 }
 
-configure([checkstyleMain, checkstyleTest]) { 
+configure([checkstyleMain, checkstyleTest]) {
     doFirst {
         def suppressions = resources.text.fromArchiveEntry(configurations.codeMetrics, "checkstyle/suppressions.xml")
         // the asFile() method extracts the file from the zip archive and puts it next to checkstyle.xml
