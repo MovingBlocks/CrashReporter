@@ -11,8 +11,7 @@ plugins {
 repositories {
     maven {
         name = "Terasology Artifactory"
-        url = uri("http://artifactory.terasology.org:8081/artifactory/virtual-repo-live")
-        isAllowInsecureProtocol = true // 😱
+        url = uri("https://artifactory.terasology.io/artifactory/virtual-repo-live")
     }
     mavenCentral()
     maven {

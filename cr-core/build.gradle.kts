@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import org.gradle.api.plugins.quality.Checkstyle
+import org.gradle.api.plugins.quality.Pmd
 
 plugins {
     `java-library`
@@ -45,8 +46,7 @@ repositories {
     }
     maven {
         name = "Terasology Artifactory"
-        url = uri("http://artifactory.terasology.org:8081/artifactory/virtual-repo-live")
-        isAllowInsecureProtocol = true // 😱
+        url = uri("https://artifactory.terasology.io/artifactory/virtual-repo-live")
     }
 }
 
@@ -54,23 +54,27 @@ val codeMetrics = configurations.create("codeMetrics")
 
 dependencies {
 
-    codeMetrics("org.terasology.config:codemetrics:1.1.0@zip")
+    codeMetrics("org.terasology.config:codemetrics:2.2.0@zip")
 
-    checkstyle("com.puppycrawl.tools:checkstyle:6.17")
-    pmd("net.sourceforge.pmd:pmd-core:5.4.1")
-    pmd("net.sourceforge.pmd:pmd-java:5.4.1")
+    checkstyle("com.puppycrawl.tools:checkstyle:10.2")
+    pmd("net.sourceforge.pmd:pmd-ant:7.0.0-rc4")
+    pmd("net.sourceforge.pmd:pmd-core:7.0.0-rc4")
+    pmd("net.sourceforge.pmd:pmd-java:7.0.0-rc4")
 
     implementation("org:jpastebin:1.0.1")
-    implementation("org.apache.httpcomponents:httpcomponents-client:4.5.2")
-    implementation("org.apache.httpcomponents:httpmime:4.5.2")
+    implementation("org.apache.httpcomponents:httpclient:4.5.13")
+    implementation("org.apache.httpcomponents:httpmime:4.5.13")
 
-    testImplementation("junit:junit:4.12")
-    testImplementation("org.mockito:mockito-core:2.7.22")
-    testImplementation("org.slf4j:slf4j-api:1.7.21")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.1")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.mockito:mockito-core:5.6.0")
+    testImplementation("org.slf4j:slf4j-api:2.0.11")
 
-    testRuntimeOnly("ch.qos.logback:logback-classic:1.1.7")
+    testRuntimeOnly("ch.qos.logback:logback-classic:1.4.14")
 
-    implementation("com.google.guava:guava:19.0")
+    implementation("com.google.guava:guava:31.1-jre")
 
     // But on the other hand to be able to run the unit tests successfully while embedded we still do need this
     if (rootProject.name == "Terasology") {
@@ -112,30 +116,43 @@ val runInteractiveTest = tasks.register<JavaExec>("runInteractiveTest") {
     args = listOf("setupForExtraLongMessageException", "src/test/resources/lengthy_logfile.log", "en-US")
 }
 
-tasks.named<Checkstyle>("checkstyleMain") {
-    doFirst {
-        resources.text.fromArchiveEntry(codeMetrics, "checkstyle/suppressions.xml").asFile()
-    }
+// checkstyle.xml's own SuppressionFilter references ${config_loc}/suppressions.xml, Checkstyle's
+// built-in "directory containing the config file" property - that's only populated correctly
+// when the config is loaded from a real directory on disk, not from an in-place archive-entry
+// read (which extracts each entry to its own isolated temp location, so checkstyle.xml and
+// suppressions.xml never end up as real siblings). Extract the already-downloaded codeMetrics
+// zip once instead, and point checkstyle/pmd at the extracted directory.
+val extractCodeMetrics = tasks.register<Copy>("extractCodeMetrics") {
+    from(codeMetrics.map { zipTree(it) })
+    into(layout.buildDirectory.dir("codeMetrics"))
 }
 
-tasks.named<Checkstyle>("checkstyleTest") {
-    doFirst {
-        resources.text.fromArchiveEntry(codeMetrics, "checkstyle/suppressions.xml").asFile()
-    }
+tasks.withType<Checkstyle>().configureEach {
+    dependsOn(extractCodeMetrics)
+}
+
+tasks.withType<Pmd>().configureEach {
+    dependsOn(extractCodeMetrics)
 }
 
 checkstyle {
     isIgnoreFailures = true
-    config = resources.text.fromArchiveEntry(codeMetrics, "checkstyle/checkstyle.xml")
-    configProperties["samedir"] = config.asFile().parent
+    configDirectory.set(layout.buildDirectory.dir("codeMetrics/checkstyle"))
 }
 
 pmd {
     isIgnoreFailures = true
-    ruleSetConfig = resources.text.fromArchiveEntry(codeMetrics, "pmd/pmd.xml")
+    ruleSetFiles = files(layout.buildDirectory.file("codeMetrics/pmd/pmd.xml"))
     ruleSets = listOf()
 }
 
 tasks.javadoc {
     isFailOnError = false
+}
+
+tasks.test {
+    useJUnitPlatform()
+    // InteractiveTestCases is a manual runner (see runInteractiveTest), not an automated test -
+    // there are no @Test methods in this project.
+    failOnNoDiscoveredTests.set(false)
 }
