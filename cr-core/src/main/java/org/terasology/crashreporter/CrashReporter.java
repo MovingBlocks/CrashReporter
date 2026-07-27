@@ -14,7 +14,6 @@ import org.terasology.crashreporter.GlobalProperties.KEY;
 import java.awt.Dialog;
 import java.awt.Dimension;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -92,15 +91,24 @@ public final class CrashReporter {
      * games such as Terasology and Destination Sol, so they can create their window) permanently
      * claims the OS's single native UI thread for its own run loop. AWT's native AppKit toolkit
      * needs that very same thread to initialize, and blocks forever if it's already claimed - so
-     * a Swing dialog can never appear in such a process. Detect that situation from the running
-     * JVM's own launch arguments and relaunch the reporter in a fresh, unconstrained JVM instead.
+     * a Swing dialog can never appear in such a process.
+     * <p>
+     * {@code -XstartOnFirstThread} itself isn't visible via
+     * {@link ManagementFactory#getRuntimeMXBean()}'s input arguments - it's consumed by the
+     * native launcher before the JVM's own argument list is populated - so it can't be detected
+     * directly. Games that need it also always pair it with {@code -Djava.awt.headless=true} to
+     * keep AWT out of the way otherwise, and that flag - unlike the native one - is a normal
+     * system property, reliably visible here. A caller invoking this library realistically only
+     * does so when a real display exists (Terasology's own uncaught-exception handler, for
+     * example, already skips calling this at all when genuinely headless), so treating "macOS and
+     * headless" as "isolate" is a safe, reliable proxy for the actual unobservable condition.
      */
     private static boolean requiresProcessIsolation() {
         String osName = System.getProperty("os.name", "");
         if (!osName.toLowerCase().contains("mac")) {
             return false;
         }
-        return ManagementFactory.getRuntimeMXBean().getInputArguments().contains("-XstartOnFirstThread");
+        return Boolean.getBoolean("java.awt.headless");
     }
 
     private static void reportInSubprocess(Throwable throwable, Path logFileFolder, MODE mode) {
