@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // For generating IntelliJ project files
-apply plugin: 'idea'
+plugins {
+    idea
+}
 
-wrapper {
-    gradleVersion = '8.2.1'
+tasks.wrapper {
+    gradleVersion = "9.6.1"
 }
 
 // Using this instead of allprojects allows this project to be embedded yet not affect parent projects
-group = 'org.terasology'
+group = "org.terasology"
 subprojects {
-    group = 'org.terasology.crashreporter'
+    group = "org.terasology.crashreporter"
 }
-
