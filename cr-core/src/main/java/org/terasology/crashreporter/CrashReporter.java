@@ -13,8 +13,13 @@ import org.terasology.crashreporter.GlobalProperties.KEY;
 
 import java.awt.Dialog;
 import java.awt.Dimension;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Displays a detailed error message and provides some options to communicate with devs.
@@ -48,6 +53,14 @@ public final class CrashReporter {
      * @param mode crash reporter, issue reporter or feedback window
      */
     public static void report(final Throwable throwable, final Path logFileFolder, final MODE mode) {
+        if (requiresProcessIsolation()) {
+            reportInSubprocess(throwable, logFileFolder, mode);
+        } else {
+            reportInProcess(throwable, logFileFolder, mode);
+        }
+    }
+
+    private static void reportInProcess(final Throwable throwable, final Path logFileFolder, final MODE mode) {
         // Swing element methods must be called in the swing thread
         try {
             SwingUtilities.invokeAndWait(new Runnable() {
@@ -72,6 +85,79 @@ public final class CrashReporter {
         } catch (InvocationTargetException | InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * On macOS, a process launched with {@code -XstartOnFirstThread} (required by GLFW-based
+     * games such as Terasology and Destination Sol, so they can create their window) permanently
+     * claims the OS's single native UI thread for its own run loop. AWT's native AppKit toolkit
+     * needs that very same thread to initialize, and blocks forever if it's already claimed - so
+     * a Swing dialog can never appear in such a process. Detect that situation from the running
+     * JVM's own launch arguments and relaunch the reporter in a fresh, unconstrained JVM instead.
+     */
+    private static boolean requiresProcessIsolation() {
+        String osName = System.getProperty("os.name", "");
+        if (!osName.toLowerCase().contains("mac")) {
+            return false;
+        }
+        return ManagementFactory.getRuntimeMXBean().getInputArguments().contains("-XstartOnFirstThread");
+    }
+
+    private static void reportInSubprocess(Throwable throwable, Path logFileFolder, MODE mode) {
+        String javaBin = Paths.get(System.getProperty("java.home"), "bin", "java").toString();
+        String message = throwable.getLocalizedMessage();
+
+        List<String> command = new ArrayList<>();
+        command.add(javaBin);
+        command.add("-cp");
+        command.add(System.getProperty("java.class.path"));
+        command.add(CrashReporter.class.getName());
+        command.add(throwable.getClass().getName());
+        command.add(message == null ? "" : message);
+        command.add(logFileFolder == null ? "" : logFileFolder.toAbsolutePath().toString());
+        command.add(mode.name());
+
+        try {
+            new ProcessBuilder(command)
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                    .redirectError(ProcessBuilder.Redirect.DISCARD)
+                    .start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Entry point used internally to relaunch the reporter in an isolated process, see
+     * {@link #reportInSubprocess}. Not intended to be invoked directly by callers of this
+     * library.
+     */
+    public static void main(String[] args) {
+        String throwableClassName = args[0];
+        String message = args[1].isEmpty() ? null : args[1];
+        Path logFileFolder = args[2].isEmpty() ? null : Paths.get(args[2]);
+        MODE mode = MODE.valueOf(args[3]);
+
+        reportInProcess(reconstructThrowable(throwableClassName, message), logFileFolder, mode);
+    }
+
+    /**
+     * Best-effort reconstruction of the original throwable's identity in the new process: a real
+     * exception can't be passed across a process boundary, and
+     * {@link org.terasology.crashreporter.pages.ErrorMessagePanel} only ever reads
+     * {@code getClass().getSimpleName()} and {@code getLocalizedMessage()} for display, so
+     * that's all that needs to survive the trip.
+     */
+    private static Throwable reconstructThrowable(String className, String message) {
+        try {
+            Class<?> throwableClass = Class.forName(className);
+            if (Throwable.class.isAssignableFrom(throwableClass)) {
+                return (Throwable) throwableClass.getConstructor(String.class).newInstance(message);
+            }
+        } catch (ReflectiveOperationException e) {
+            // fall through to the generic Throwable below
+        }
+        return new Throwable(message == null ? className : className + ": " + message);
     }
 
     protected static void showModalDialog(Throwable throwable, GlobalProperties properties, Path logFolder, MODE mode) {
