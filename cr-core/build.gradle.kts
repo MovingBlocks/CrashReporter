@@ -70,9 +70,9 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.mockito:mockito-core:5.6.0")
-    testImplementation("org.slf4j:slf4j-api:2.0.11")
+    testImplementation("org.slf4j:slf4j-api:2.0.18")
 
-    testRuntimeOnly("ch.qos.logback:logback-classic:1.4.14")
+    testRuntimeOnly("ch.qos.logback:logback-classic:1.6.0")
 
     implementation("com.google.guava:guava:31.1-jre")
 
