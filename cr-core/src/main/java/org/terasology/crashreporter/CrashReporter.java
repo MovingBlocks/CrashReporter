@@ -141,10 +141,16 @@ public final class CrashReporter {
         command.add(mode.name());
 
         try {
-            new ProcessBuilder(command)
+            ProcessBuilder processBuilder = new ProcessBuilder(command)
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                    .redirectError(ProcessBuilder.Redirect.DISCARD)
-                    .start();
+                    .redirectError(ProcessBuilder.Redirect.INHERIT);
+            // -XstartOnFirstThread is exactly the constraint requiresProcessIsolation() isolates
+            // against - every JVM reads these two env vars at startup automatically, so if either
+            // carries that flag, ProcessBuilder's default environment inheritance would hand the
+            // exact same constraint straight back to the subprocess we're spawning to escape it.
+            processBuilder.environment().remove("JAVA_TOOL_OPTIONS");
+            processBuilder.environment().remove("_JAVA_OPTIONS");
+            processBuilder.start();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -173,7 +179,9 @@ public final class CrashReporter {
      */
     private static Throwable reconstructThrowable(String className, String message) {
         try {
-            Class<?> throwableClass = Class.forName(className);
+            // Don't initialize (run static initializers of) a class from an arbitrary name
+            // before confirming it's actually a Throwable subtype we intend to instantiate.
+            Class<?> throwableClass = Class.forName(className, false, CrashReporter.class.getClassLoader());
             if (Throwable.class.isAssignableFrom(throwableClass)) {
                 return (Throwable) throwableClass.getConstructor(String.class).newInstance(message);
             }
