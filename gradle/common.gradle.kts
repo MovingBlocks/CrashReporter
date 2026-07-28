@@ -40,7 +40,7 @@ configure<PublishingExtension> {
                 logger.info("The final deduced publish repo is {}", deducedPublishRepo)
                 deducedPublishRepo
             }
-            url = uri("http://artifactory.terasology.org/artifactory/$publishRepo")
+            url = uri("https://artifactory.terasology.io/artifactory/$publishRepo")
 
             if (rootProject.hasProperty("mavenUser") && rootProject.hasProperty("mavenPass")) {
                 credentials {
