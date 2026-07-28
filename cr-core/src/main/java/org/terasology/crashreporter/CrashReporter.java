@@ -87,6 +87,21 @@ public final class CrashReporter {
     }
 
     /**
+     * Name of the system property that, when set to {@code true}, forces
+     * {@link #requiresProcessIsolation()} to return {@code true} regardless of platform - lets
+     * the subprocess path be exercised on non-macOS platforms too, e.g. for testing.
+     * <p>
+     * Only the property <em>name</em> is a constant here - {@code static final} on this String
+     * has no bearing on how live the check is. {@link #requiresProcessIsolation()} calls
+     * {@link Boolean#getBoolean(String)} (which reads {@link System#getProperty(String)}) fresh
+     * on every invocation; nothing caches the resolved value at class-load time. So this can be
+     * set any time before {@link #report(Throwable, java.nio.file.Path)} is actually called -
+     * via a {@code -D} JVM launch flag, or programmatically via
+     * {@link System#setProperty(String, String)} at runtime.
+     */
+    private static final String FORCE_PROCESS_ISOLATION_PROPERTY = "org.terasology.crashreporter.forceProcessIsolation";
+
+    /**
      * On macOS, a process launched with {@code -XstartOnFirstThread} (required by GLFW-based
      * games such as Terasology and Destination Sol, so they can create their window) permanently
      * claims the OS's single native UI thread for its own run loop. AWT's native AppKit toolkit
@@ -96,19 +111,19 @@ public final class CrashReporter {
      * {@code -XstartOnFirstThread} itself isn't visible via
      * {@link ManagementFactory#getRuntimeMXBean()}'s input arguments - it's consumed by the
      * native launcher before the JVM's own argument list is populated - so it can't be detected
-     * directly. Games that need it also always pair it with {@code -Djava.awt.headless=true} to
-     * keep AWT out of the way otherwise, and that flag - unlike the native one - is a normal
-     * system property, reliably visible here. A caller invoking this library realistically only
-     * does so when a real display exists (Terasology's own uncaught-exception handler, for
-     * example, already skips calling this at all when genuinely headless), so treating "macOS and
-     * headless" as "isolate" is a safe, reliable proxy for the actual unobservable condition.
+     * directly, and not every caller pairs it with a reliably-visible signal like
+     * {@code -Djava.awt.headless=true} (Terasology does; Destination Sol doesn't). Rather than
+     * depend on a convention only some callers follow, isolate unconditionally on macOS - the
+     * cost of an unnecessary subprocess is small, and a caller that isn't actually
+     * {@code -XstartOnFirstThread}-constrained just gets the dialog shown from a fresh process
+     * instead of in-process, with no functional difference either way.
      */
     private static boolean requiresProcessIsolation() {
-        String osName = System.getProperty("os.name", "");
-        if (!osName.toLowerCase().contains("mac")) {
-            return false;
+        if (Boolean.getBoolean(FORCE_PROCESS_ISOLATION_PROPERTY)) {
+            return true;
         }
-        return Boolean.getBoolean("java.awt.headless");
+        String osName = System.getProperty("os.name", "");
+        return osName.toLowerCase().contains("mac");
     }
 
     private static void reportInSubprocess(Throwable throwable, Path logFileFolder, MODE mode) {
