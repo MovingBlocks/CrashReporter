@@ -22,7 +22,6 @@ configure<PublishingExtension> {
     repositories {
         maven {
             name = "TerasologyOrg"
-            isAllowInsecureProtocol = true // 😱 - no https on our Artifactory yet
 
             val publishRepo = if (rootProject.hasProperty("publishRepo")) {
                 // This first option is good for local testing, you can set a full explicit target repo in gradle.properties
