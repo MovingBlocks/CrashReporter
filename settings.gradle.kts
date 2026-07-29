@@ -1,0 +1,17 @@
+// Copyright 2021 The Terasology Foundation
+// SPDX-License-Identifier: Apache-2.0
+
+// Check to see if CR is embedded within Terasology, if so use nested paths
+println("rootProject for CrashReporter is: " + rootProject.name)
+
+if (rootProject.name == "Terasology") {
+    println("CrashReporter is embedded within Terasology, using nested paths")
+    include(":libs:CrashReporter:cr-core")
+    include(":libs:CrashReporter:cr-destsol")
+    include(":libs:CrashReporter:cr-terasology")
+} else {
+    println("CrashReporter is running standalone so using simple paths for includes")
+    include("cr-core")
+    include("cr-destsol")
+    include("cr-terasology")
+}
