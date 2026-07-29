@@ -8,6 +8,18 @@ plugins {
     idea
 }
 
+repositories {
+    maven {
+        name = "Terasology Artifactory"
+        url = uri("https://artifactory.terasology.io/artifactory/virtual-repo-live")
+    }
+    mavenCentral()
+    maven {
+        name = "JBoss Public Maven Repository Group"
+        url = uri("https://repository.jboss.org/nexus/content/repositories/public/")
+    }
+}
+
 dependencies {
     api(project(":cr-core"))
 }
