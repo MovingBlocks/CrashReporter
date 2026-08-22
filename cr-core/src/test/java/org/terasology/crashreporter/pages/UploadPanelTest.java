@@ -27,6 +27,11 @@ import static org.junit.jupiter.api.Assertions.fail;
  * {@code PastebinUploadRunnable} makes a real HTTP call with no timeout of its own, so a slow or
  * unreachable server left the upload button disabled and the status label reading "please wait"
  * forever, with no way to tell "still working" from "never finishing".
+ *
+ * <p>Fully offline: {@code PastebinUploadRunnable} is never instantiated here, so no test makes a
+ * real HTTP call. "Slow"/"failing" uploads are hand-written {@link Callable}s (sleep-then-return,
+ * throw); the {@code pastebin.com} URLs below are only ever passed to {@link URL#URL(String)},
+ * which parses a string and never opens a connection.
  */
 class UploadPanelTest {
 
