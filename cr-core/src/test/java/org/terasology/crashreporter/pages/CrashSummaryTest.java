@@ -91,4 +91,48 @@ class CrashSummaryTest {
         assertFalse(body.contains("null"), "A skipped upload must not leak the literal string \"null\" into the body: " + body);
         assertTrue(body.contains("not uploaded"), "Expected a note that upload was skipped, got: " + body);
     }
+
+    // Regression: ErrorMessagePanel#getLog() combines every log tab, not just the one that
+    // triggered the report, but only the in-process exception ever made it into the pre-filled
+    // issue - an exception logged in a different tab (e.g. an earlier init-time failure) was
+    // silently left out even though it was right there in the combined text.
+    @Test
+    void bodyListsExceptionsFoundInOtherLogTabs() {
+        String combinedLog = "=== Terasology-init.log ===\n" + LOG_TEXT
+                + "\n=== Terasology-game.log ===\n"
+                + "10:10:05.123 [main] ERROR o.t.e.core.TerasologyEngine - Uncaught exception in main loop\n"
+                + "java.lang.NullPointerException: world was null\n"
+                + "\tat org.terasology.engine.core.TerasologyEngine.run(TerasologyEngine.java:200)\n";
+
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), combinedLog);
+        String body = summary.buildBody(null);
+
+        assertTrue(body.contains("### Other exceptions found in logs"), "Expected a section listing it, got: " + body);
+        assertTrue(body.contains("Terasology-game.log: java.lang.NullPointerException: world was null"),
+                "Expected the other tab's exception attributed to its tab, got: " + body);
+    }
+
+    @Test
+    void bodyDoesNotDuplicateThePrimaryExceptionAsAnOtherException() {
+        RuntimeException primary = new RuntimeException("boom");
+        // The crash is very often also logged (by the crashed process itself) in one of its own
+        // log tabs - that's the same exception, not another one, and must not be listed twice.
+        String combinedLog = "=== Terasology-game.log ===\n"
+                + primary + "\n"
+                + "\tat org.terasology.engine.core.TerasologyEngine.run(TerasologyEngine.java:200)\n";
+
+        CrashSummary summary = CrashSummary.extract(primary, combinedLog);
+        String body = summary.buildBody(null);
+
+        assertFalse(body.contains("### Other exceptions found in logs"),
+                "The primary exception's own log entry must not be listed as an \"other\" exception, got: " + body);
+    }
+
+    @Test
+    void bodyOmitsTheOtherExceptionsSectionWhenThereAreNone() {
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
+        String body = summary.buildBody(null);
+
+        assertFalse(body.contains("### Other exceptions found in logs"), "Expected no such section, got: " + body);
+    }
 }
