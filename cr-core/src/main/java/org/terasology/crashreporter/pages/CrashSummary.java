@@ -3,8 +3,6 @@
 
 package org.terasology.crashreporter.pages;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,9 +11,9 @@ import java.util.regex.Pattern;
 
 /**
  * Builds a pre-filled GitHub issue title/body from a crash: the exception itself (available
- * directly, no parsing needed), plus the engine version and active module list, which only exist
- * in the crashed process' own log output - the reporter runs in its own JVM (see #52, subprocess
- * isolation) and has no other way to reach them.
+ * directly, no parsing needed), plus every other exception found across the crashed process' own
+ * log tabs, and the engine version/active module list - the reporter runs in its own JVM (see #52,
+ * subprocess isolation) and has no other way to reach any of the log-only information.
  * <p>
  * The regexes here mirror two fixed, narrow log lines the engine emits at startup - see
  * {@code TerasologyEngine#logEnvironmentInfo} ({@code TerasologyVersion#toString}'s
@@ -26,10 +24,10 @@ import java.util.regex.Pattern;
  */
 public final class CrashSummary {
 
-    private static final int MAX_STACK_LINES = 15;
     private static final int MAX_MODULES_LISTED = 30;
     private static final int MAX_TITLE_MESSAGE_LENGTH = 80;
-    private static final int MAX_OTHER_EXCEPTIONS_LISTED = 10;
+    private static final int MAX_EXCEPTIONS_LISTED = 10;
+    private static final String NO_TAB_LABEL = "this crash";
 
     private static final Pattern ENGINE_VERSION_PATTERN = Pattern.compile("engineVersion=([^,\\]]*)");
     private static final Pattern DISPLAY_VERSION_PATTERN = Pattern.compile("displayVersion=([^,\\]]*)");
@@ -43,42 +41,121 @@ public final class CrashSummary {
             "(?m)^([\\w$]+(?:\\.[\\w$]+)+(?:Exception|Error))(:[^\\n]*)?\\n((?:[ \\t]*(?:at |Caused by:)[^\\n]*\\n?)+)");
 
     private final Throwable exception;
-    private final String stackTraceExtract;
+    private final List<String> exceptionRows;
+    private final int moreExceptionsCount;
     private final String engineVersion;
     private final String displayVersion;
     private final List<String> activeModules;
-    private final List<String> otherExceptions;
 
-    private CrashSummary(Throwable exception, String stackTraceExtract, String engineVersion,
-                          String displayVersion, List<String> activeModules, List<String> otherExceptions) {
+    private CrashSummary(Throwable exception, List<String> exceptionRows, int moreExceptionsCount,
+                          String engineVersion, String displayVersion, List<String> activeModules) {
         this.exception = exception;
-        this.stackTraceExtract = stackTraceExtract;
+        this.exceptionRows = exceptionRows;
+        this.moreExceptionsCount = moreExceptionsCount;
         this.engineVersion = engineVersion;
         this.displayVersion = displayVersion;
         this.activeModules = activeModules;
-        this.otherExceptions = otherExceptions;
     }
 
     public static CrashSummary extract(Throwable exception, String combinedLogText) {
         String text = combinedLogText != null ? combinedLogText : "";
-        return new CrashSummary(exception, extractStackTrace(exception),
+
+        List<String> rows = buildExceptionRows(exception, text);
+        int moreCount = 0;
+        if (rows.size() > MAX_EXCEPTIONS_LISTED) {
+            moreCount = rows.size() - MAX_EXCEPTIONS_LISTED;
+            rows = new ArrayList<>(rows.subList(0, MAX_EXCEPTIONS_LISTED));
+        }
+
+        return new CrashSummary(exception, rows, moreCount,
                 firstGroup(ENGINE_VERSION_PATTERN, text), firstGroup(DISPLAY_VERSION_PATTERN, text),
-                extractActiveModules(text), extractOtherExceptions(text, exception));
+                extractActiveModules(text));
     }
 
-    private static String extractStackTrace(Throwable exception) {
-        StringWriter sink = new StringWriter();
-        exception.printStackTrace(new PrintWriter(sink));
-        String[] lines = sink.toString().split("\r?\n");
-        StringBuilder builder = new StringBuilder();
-        int limit = Math.min(lines.length, MAX_STACK_LINES);
-        for (int i = 0; i < limit; i++) {
-            builder.append(lines[i]).append('\n');
+    /**
+     * Builds one row per distinct exception found - the one that triggered this report first
+     * (attributed to whichever log tab also logged it, if any - see {@link #NO_TAB_LABEL}), then
+     * every other exception found across the log tabs, so a crash whose real cause is an earlier
+     * exception logged in a different tab (e.g. during init) isn't left out of the pre-filled issue
+     * just because it wasn't the in-process {@code exception} the reporter happened to be invoked
+     * with.
+     */
+    private static List<String> buildExceptionRows(Throwable exception, String combinedLogText) {
+        String primaryHeader = exception.toString().trim();
+        List<ExceptionEntry> found = findAllExceptions(combinedLogText);
+
+        String primaryTab = null;
+        for (ExceptionEntry entry : found) {
+            if (entry.header.equals(primaryHeader)) {
+                primaryTab = entry.tabName;
+                break;
+            }
         }
-        if (lines.length > limit) {
-            builder.append("... ").append(lines.length - limit).append(" more line(s) - see the full log\n");
+
+        List<String> rows = new ArrayList<>();
+        rows.add(formatRow(primaryTab, primaryHeader));
+        for (ExceptionEntry entry : found) {
+            if (entry.header.equals(primaryHeader)) {
+                continue;
+            }
+            String row = formatRow(entry.tabName, entry.header);
+            if (!rows.contains(row)) {
+                rows.add(row);
+            }
         }
-        return builder.toString().trim();
+        return rows;
+    }
+
+    private static String formatRow(String tabName, String header) {
+        String label = tabName != null ? tabName : NO_TAB_LABEL;
+        String message = header.length() > MAX_TITLE_MESSAGE_LENGTH
+                ? header.substring(0, MAX_TITLE_MESSAGE_LENGTH - 3) + "..."
+                : header;
+        return "**" + label + "**: `" + message + "`";
+    }
+
+    private static final class ExceptionEntry {
+        private final String tabName;
+        private final String header;
+
+        private ExceptionEntry(String tabName, String header) {
+            this.tabName = tabName;
+            this.header = header;
+        }
+    }
+
+    private static List<ExceptionEntry> findAllExceptions(String combinedLogText) {
+        List<ExceptionEntry> found = new ArrayList<>();
+
+        Matcher tabMatcher = LOG_TAB_PATTERN.matcher(combinedLogText);
+        int tabStart = -1;
+        String tabName = null;
+        while (true) {
+            boolean hasNext = tabMatcher.find();
+            int nextStart = hasNext ? tabMatcher.start() : combinedLogText.length();
+            if (tabName != null) {
+                collectExceptionHeaders(combinedLogText.substring(tabStart, nextStart), tabName, found);
+            }
+            if (!hasNext) {
+                break;
+            }
+            tabName = tabMatcher.group(1);
+            tabStart = tabMatcher.end();
+        }
+        // No "=== tab ===" headers at all - a single combined-log caller (e.g. a direct test) rather
+        // than ErrorMessagePanel#getLog(); scan the whole text with no tab attribution.
+        if (tabName == null) {
+            collectExceptionHeaders(combinedLogText, null, found);
+        }
+        return found;
+    }
+
+    private static void collectExceptionHeaders(String tabText, String tabName, List<ExceptionEntry> found) {
+        Matcher matcher = STACK_TRACE_HEADER_PATTERN.matcher(tabText);
+        while (matcher.find()) {
+            String header = (matcher.group(1) + (matcher.group(2) != null ? matcher.group(2) : "")).trim();
+            found.add(new ExceptionEntry(tabName, header));
+        }
     }
 
     private static String firstGroup(Pattern pattern, String text) {
@@ -99,56 +176,6 @@ public final class CrashSummary {
     }
 
     /**
-     * Scans every log tab (not just the one that triggered this report - see {@link #buildBody}) for
-     * other stack traces, so a crash whose real cause is an earlier exception logged in a different
-     * tab (e.g. during init) isn't left out of the pre-filled issue just because it wasn't the
-     * in-process {@code exception} the reporter happened to be invoked with.
-     *
-     * @return "tab name: header line" for each distinct exception found, skipping {@code exception}'s
-     *         own header line - that one is already covered by {@link #stackTraceExtract}.
-     */
-    private static List<String> extractOtherExceptions(String combinedLogText, Throwable exception) {
-        String primaryHeader = exception.toString().trim();
-        List<String> found = new ArrayList<>();
-
-        Matcher tabMatcher = LOG_TAB_PATTERN.matcher(combinedLogText);
-        int tabStart = -1;
-        String tabName = null;
-        while (true) {
-            boolean hasNext = tabMatcher.find();
-            int nextStart = hasNext ? tabMatcher.start() : combinedLogText.length();
-            if (tabName != null) {
-                collectExceptionHeaders(combinedLogText.substring(tabStart, nextStart), tabName, primaryHeader, found);
-            }
-            if (!hasNext) {
-                break;
-            }
-            tabName = tabMatcher.group(1);
-            tabStart = tabMatcher.end();
-        }
-        // No "=== tab ===" headers at all - a single combined-log caller (e.g. a direct test) rather
-        // than ErrorMessagePanel#getLog(); scan the whole text as one unnamed tab.
-        if (tabName == null) {
-            collectExceptionHeaders(combinedLogText, "log", primaryHeader, found);
-        }
-        return found;
-    }
-
-    private static void collectExceptionHeaders(String tabText, String tabName, String primaryHeader, List<String> found) {
-        Matcher matcher = STACK_TRACE_HEADER_PATTERN.matcher(tabText);
-        while (matcher.find()) {
-            String header = (matcher.group(1) + (matcher.group(2) != null ? matcher.group(2) : "")).trim();
-            if (header.equals(primaryHeader)) {
-                continue;
-            }
-            String entry = tabName + ": " + header;
-            if (!found.contains(entry)) {
-                found.add(entry);
-            }
-        }
-    }
-
-    /**
      * @return a short, single-line issue title: the exception's simple class name, plus a
      *         truncated message if it has one.
      */
@@ -166,12 +193,20 @@ public final class CrashSummary {
 
     /**
      * @param pastebinLink the uploaded log link, or {@code null} if the user skipped upload
-     * @return a Markdown issue body with the exception extract, environment info, and a link to
-     *         the full logs
+     * @return a Markdown issue body: every exception found (one row each, naming the log tab it was
+     *         found in), then environment info, then a link to the full logs
      */
     public String buildBody(URL pastebinLink) {
         StringBuilder body = new StringBuilder();
-        body.append("### Exception\n\n```\n").append(stackTraceExtract).append("\n```\n\n");
+
+        body.append("### Exceptions\n\n");
+        for (String row : exceptionRows) {
+            body.append("- ").append(row).append('\n');
+        }
+        if (moreExceptionsCount > 0) {
+            body.append("- ... ").append(moreExceptionsCount).append(" more - see the full log\n");
+        }
+        body.append('\n');
 
         body.append("### Environment\n\n");
         body.append("- Terasology version: ").append(engineVersion.isEmpty() ? "unknown" : engineVersion);
@@ -192,17 +227,6 @@ public final class CrashSummary {
             }
             if (activeModules.size() > shown) {
                 body.append("  - ... ").append(activeModules.size() - shown).append(" more\n");
-            }
-        }
-
-        if (!otherExceptions.isEmpty()) {
-            body.append("\n### Other exceptions found in logs\n\n");
-            int shown = Math.min(otherExceptions.size(), MAX_OTHER_EXCEPTIONS_LISTED);
-            for (int i = 0; i < shown; i++) {
-                body.append("- `").append(otherExceptions.get(i)).append("`\n");
-            }
-            if (otherExceptions.size() > shown) {
-                body.append("- ... ").append(otherExceptions.size() - shown).append(" more - see the full log\n");
             }
         }
 

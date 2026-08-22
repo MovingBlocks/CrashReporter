@@ -95,9 +95,11 @@ class CrashSummaryTest {
     // Regression: ErrorMessagePanel#getLog() combines every log tab, not just the one that
     // triggered the report, but only the in-process exception ever made it into the pre-filled
     // issue - an exception logged in a different tab (e.g. an earlier init-time failure) was
-    // silently left out even though it was right there in the combined text.
+    // silently left out even though it was right there in the combined text. All exceptions - the
+    // primary one and every other one found - are listed together, one row each, before
+    // "### Environment", not split across two separate sections.
     @Test
-    void bodyListsExceptionsFoundInOtherLogTabs() {
+    void bodyListsExceptionsFoundInOtherLogTabsAsARowNamingTheTab() {
         String combinedLog = "=== Terasology-init.log ===\n" + LOG_TEXT
                 + "\n=== Terasology-game.log ===\n"
                 + "10:10:05.123 [main] ERROR o.t.e.core.TerasologyEngine - Uncaught exception in main loop\n"
@@ -107,13 +109,17 @@ class CrashSummaryTest {
         CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), combinedLog);
         String body = summary.buildBody(null);
 
-        assertTrue(body.contains("### Other exceptions found in logs"), "Expected a section listing it, got: " + body);
-        assertTrue(body.contains("Terasology-game.log: java.lang.NullPointerException: world was null"),
-                "Expected the other tab's exception attributed to its tab, got: " + body);
+        assertTrue(body.contains("### Exceptions"), "Expected a single unified exceptions section, got: " + body);
+        assertTrue(body.contains("**Terasology-game.log**: `java.lang.NullPointerException: world was null`"),
+                "Expected the other tab's exception as its own row naming the tab, got: " + body);
+        int exceptionsIndex = body.indexOf("### Exceptions");
+        int environmentIndex = body.indexOf("### Environment");
+        assertTrue(exceptionsIndex >= 0 && environmentIndex > exceptionsIndex,
+                "Expected \"### Exceptions\" before \"### Environment\", got: " + body);
     }
 
     @Test
-    void bodyDoesNotDuplicateThePrimaryExceptionAsAnOtherException() {
+    void bodyAttributesThePrimaryExceptionToItsOwnTabInsteadOfListingItTwice() {
         RuntimeException primary = new RuntimeException("boom");
         // The crash is very often also logged (by the crashed process itself) in one of its own
         // log tabs - that's the same exception, not another one, and must not be listed twice.
@@ -124,15 +130,18 @@ class CrashSummaryTest {
         CrashSummary summary = CrashSummary.extract(primary, combinedLog);
         String body = summary.buildBody(null);
 
-        assertFalse(body.contains("### Other exceptions found in logs"),
-                "The primary exception's own log entry must not be listed as an \"other\" exception, got: " + body);
+        assertTrue(body.contains("**Terasology-game.log**: `java.lang.RuntimeException: boom`"),
+                "Expected the primary exception's row attributed to the tab it was found in, got: " + body);
+        int rows = body.split("\n- \\*\\*", -1).length - 1;
+        assertEquals(1, rows, "Expected exactly one row - the primary exception must not also be listed as an \"other\" one: " + body);
     }
 
     @Test
-    void bodyOmitsTheOtherExceptionsSectionWhenThereAreNone() {
+    void bodyAttributesThePrimaryExceptionToThisCrashWhenNotFoundInAnyTab() {
         CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
         String body = summary.buildBody(null);
 
-        assertFalse(body.contains("### Other exceptions found in logs"), "Expected no such section, got: " + body);
+        assertTrue(body.contains("**this crash**: `java.lang.RuntimeException: boom`"),
+                "Expected a fallback label when the exception isn't found in any log tab, got: " + body);
     }
 }
