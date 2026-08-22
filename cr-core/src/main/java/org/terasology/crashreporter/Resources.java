@@ -28,10 +28,15 @@ public final class Resources {
     }
 
     /**
-     * @param fname the absolute path in the jar/project
+     * @param fname the absolute path in the jar/project, or {@code null} if the property naming it
+     *              was never set
      * @return the buffered image, wrapped in an Icon
      */
     public static BufferedImage loadImage(String fname) {
+        if (fname == null) {
+            System.err.println("No resource path given (missing property?) - using placeholder image");
+            return createDummyImage(64, 64, "?");
+        }
         try {
             String fullPath = "/" + fname;
             URL rsc = Resources.class.getResource(fullPath);
