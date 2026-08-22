@@ -111,9 +111,12 @@ class CrashSummaryTest {
         String body = summary.buildBody(null);
 
         assertTrue(body.contains("### Exceptions"), "Expected a single unified exceptions section, got: " + body);
-        assertTrue(body.contains("**Terasology-game.log**\n\n```\njava.lang.NullPointerException: world was null\n"
+        assertTrue(body.contains("**Terasology-game.log**\n\n```\n"
+                        + "10:10:05.123 [main] ERROR o.t.e.core.TerasologyEngine - Uncaught exception in main loop\n"
+                        + "java.lang.NullPointerException: world was null\n"
                         + "\tat org.terasology.engine.core.TerasologyEngine.run(TerasologyEngine.java:200)\n```"),
-                "Expected the other tab's exception as its own labeled block with the full trace, got: " + body);
+                "Expected the other tab's exception as its own labeled block, with the line logged right before it and the full "
+                        + "trace, got: " + body);
         int exceptionsIndex = body.indexOf("### Exceptions");
         int environmentIndex = body.indexOf("### Environment");
         assertTrue(exceptionsIndex >= 0 && environmentIndex > exceptionsIndex,
@@ -141,6 +144,25 @@ class CrashSummaryTest {
         int blocks = body.split("\\*\\*Terasology-game\\.log\\*\\*", -1).length - 1;
         assertEquals(1, blocks, "Expected exactly one block - the primary exception must not also be listed as an \"other\" one: "
                 + body);
+    }
+
+    @Test
+    void bodyIncludesOnlyTheLastFiveLinesLoggedBeforeTheException() {
+        StringBuilder combinedLog = new StringBuilder("=== Terasology-game.log ===\n");
+        for (int i = 1; i <= 8; i++) {
+            combinedLog.append("log line ").append(i).append('\n');
+        }
+        combinedLog.append("java.lang.NullPointerException: world was null\n")
+                .append("\tat org.terasology.engine.core.TerasologyEngine.run(TerasologyEngine.java:200)\n");
+
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), combinedLog.toString());
+        String body = summary.buildBody(null);
+
+        assertFalse(body.contains("log line 1\n") || body.contains("log line 2\n") || body.contains("log line 3\n"),
+                "Expected only the last 5 lines of context, not all 8, got: " + body);
+        assertTrue(body.contains("log line 4\nlog line 5\nlog line 6\nlog line 7\nlog line 8\n"
+                        + "java.lang.NullPointerException: world was null"),
+                "Expected the last 5 lines directly before the exception's header, got: " + body);
     }
 
     @Test

@@ -38,6 +38,7 @@ public final class CrashSummary {
     private static final int MAX_MODULES_LISTED = 30;
     private static final int MAX_TITLE_MESSAGE_LENGTH = 80;
     private static final int MAX_EXCEPTIONS_LISTED = 10;
+    private static final int CONTEXT_LINES_BEFORE = 5;
     private static final String NO_TAB_LABEL = "this crash";
 
     private static final Pattern ENGINE_VERSION_PATTERN = Pattern.compile("engineVersion=([^,\\]]*)");
@@ -103,9 +104,9 @@ public final class CrashSummary {
         }
         // Not logged anywhere - fall back to the exception object's own trace. On macOS that trace
         // is a best-effort reconstruction (see the class javadoc) rather than the real crash site,
-        // but it's all that's available.
+        // but it's all that's available. There's no log text to pull leading context from either.
         if (primary == null) {
-            primary = new ExceptionEntry(null, primaryHeader, framesFromThrowable(exception));
+            primary = new ExceptionEntry(null, primaryHeader, framesFromThrowable(exception), "");
         }
 
         List<String> blocks = new ArrayList<>();
@@ -125,7 +126,11 @@ public final class CrashSummary {
     private static String formatBlock(ExceptionEntry entry) {
         String label = entry.tabName != null ? entry.tabName : NO_TAB_LABEL;
         String combined = entry.frames.isEmpty() ? entry.header : entry.header + "\n" + entry.frames;
-        return "**" + label + "**\n\n```\n" + truncateTrace(combined) + "\n```";
+        String trace = truncateTrace(combined);
+        // Context isn't part of the trace itself, so it's not subject to truncateTrace()'s
+        // MAX_STACK_LINES cap - a few lines of what led up to the crash shouldn't cost trace detail.
+        String content = entry.context.isEmpty() ? trace : entry.context + "\n" + trace;
+        return "**" + label + "**\n\n```\n" + content + "\n```";
     }
 
     private static String truncateTrace(String combined) {
@@ -168,11 +173,13 @@ public final class CrashSummary {
         private final String tabName;
         private final String header;
         private final String frames;
+        private final String context;
 
-        private ExceptionEntry(String tabName, String header, String frames) {
+        private ExceptionEntry(String tabName, String header, String frames, String context) {
             this.tabName = tabName;
             this.header = header;
             this.frames = frames;
+            this.context = context;
         }
     }
 
@@ -192,7 +199,16 @@ public final class CrashSummary {
                 break;
             }
             tabName = tabMatcher.group(1);
+            // tabMatcher.end() lands right after "===", before that line's own terminator - skip it
+            // too, so each tab's text starts at its real first content line instead of with a blank
+            // artifact line (which precedingLines() would otherwise count as logged context).
             tabStart = tabMatcher.end();
+            if (tabStart < combinedLogText.length() && combinedLogText.charAt(tabStart) == '\r') {
+                tabStart++;
+            }
+            if (tabStart < combinedLogText.length() && combinedLogText.charAt(tabStart) == '\n') {
+                tabStart++;
+            }
         }
         // No "=== tab ===" headers at all - a single combined-log caller (e.g. a direct test) rather
         // than ErrorMessagePanel#getLog(); scan the whole text with no tab attribution.
@@ -207,8 +223,31 @@ public final class CrashSummary {
         while (matcher.find()) {
             String header = (matcher.group(1) + (matcher.group(2) != null ? matcher.group(2) : "")).trim();
             String frames = stripTrailingWhitespace(matcher.group(3));
-            found.add(new ExceptionEntry(tabName, header, frames));
+            String context = precedingLines(tabText, matcher.start(), CONTEXT_LINES_BEFORE);
+            found.add(new ExceptionEntry(tabName, header, frames, context));
         }
+    }
+
+    /**
+     * @return up to {@code maxLines} lines of whatever was logged right before {@code beforeIndex} in
+     *         {@code text} - what led up to a crash is often as useful for diagnosing it as the trace
+     *         itself, and it's only available here (the reporter's own {@link #exception} carries no
+     *         log context of its own).
+     */
+    private static String precedingLines(String text, int beforeIndex, int maxLines) {
+        String[] lines = text.substring(0, beforeIndex).split("\r?\n", -1);
+        int end = lines.length;
+        // A trailing empty element only ever means the substring ended in a newline - i.e. the line
+        // right before the match, not a real blank log line - so it isn't context to show.
+        if (end > 0 && lines[end - 1].isEmpty()) {
+            end--;
+        }
+        int start = Math.max(0, end - maxLines);
+        StringBuilder builder = new StringBuilder();
+        for (int i = start; i < end; i++) {
+            builder.append(lines[i]).append('\n');
+        }
+        return stripTrailingWhitespace(builder.toString());
     }
 
     private static String firstGroup(Pattern pattern, String text) {
