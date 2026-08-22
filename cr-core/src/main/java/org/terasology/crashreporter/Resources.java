@@ -28,10 +28,19 @@ public final class Resources {
     }
 
     /**
-     * @param fname the absolute path in the jar/project
+     * @param fname the absolute path in the jar/project, or {@code null} if the property naming it
+     *              was never set - e.g. {@code RES_BANNER_IMAGE}/{@code RES_SERVER_ICON} only exist
+     *              in a downstream consumer's {@code crashreporter.properties}
+     *              ({@code cr-terasology}, {@code cr-destsol}, ...), not {@code cr-core}'s own
+     *              {@code crashreporter_defaults.properties} - so any caller running against
+     *              {@code cr-core} alone can hit this with {@code null}, not just a bad filename.
      * @return the buffered image, wrapped in an Icon
      */
     public static BufferedImage loadImage(String fname) {
+        if (fname == null) {
+            System.err.println("No resource path given (missing property?) - using placeholder image");
+            return createDummyImage(64, 64, "?");
+        }
         try {
             String fullPath = "/" + fname;
             URL rsc = Resources.class.getResource(fullPath);
