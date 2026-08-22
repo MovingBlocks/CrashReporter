@@ -39,6 +39,10 @@ public class FinalActionsPanel extends JPanel {
 
     private static final long serialVersionUID = 2639334979749507943L;
 
+    private final Throwable exception;
+
+    private final Supplier<String> logTextSupplier;
+
     private final Supplier<URL> uploadedFile;
 
     private final JTextArea linkText;
@@ -47,8 +51,11 @@ public class FinalActionsPanel extends JPanel {
 
     private boolean pageComplete;
 
-    public FinalActionsPanel(GlobalProperties properties, Supplier<URL> uploadedFile) {
+    public FinalActionsPanel(GlobalProperties properties, Throwable exception, Supplier<String> logTextSupplier,
+                              Supplier<URL> uploadedFile) {
 
+        this.exception = exception;
+        this.logTextSupplier = logTextSupplier;
         this.uploadedFile = uploadedFile;
 
         setLayout(new BorderLayout(0, 10));
@@ -89,7 +96,10 @@ public class FinalActionsPanel extends JPanel {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                openInBrowser(properties.get(KEY.REPORT_ISSUE_LINK));
+                CrashSummary summary = CrashSummary.extract(exception, logTextSupplier.get());
+                String link = GitHubIssueLinkBuilder.build(properties.get(KEY.REPORT_ISSUE_LINK),
+                        summary.buildTitle(), summary.buildBody(uploadedFile.get()));
+                openInBrowser(link);
                 pageComplete = true;
                 firePropertyChange("pageComplete", !pageComplete, pageComplete);
             }
