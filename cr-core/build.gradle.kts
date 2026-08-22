@@ -62,6 +62,20 @@ dependencies {
     pmd("net.sourceforge.pmd:pmd-java:7.0.0-rc4")
 
     implementation("org:jpastebin:1.0.1")
+    // jpastebin needs these at runtime (see its own embedded META-INF/maven/org/jpastebin/pom.xml,
+    // which pins Jackson 2.9.7) but the POM Gradle actually resolves from the JBoss repo is an
+    // empty Nexus-generated stub with no <dependencies> at all - so without declaring these
+    // ourselves, PastebinUploadRunnable.call() throws NoClassDefFoundError the first time it
+    // touches a Jackson class, only when someone actually clicks "Upload". 2.9.7 is a 2018 release
+    // with known CVEs; Jackson's 2.x line keeps this level of API (ObjectMapper, TypeReference,
+    // annotations) stable, so a current release is a safe drop-in rather than matching the old pin.
+    // The BOM (not three separately-pinned versions) because jackson-annotations renumbered its own
+    // versioning away from core/databind's x.y.z scheme starting at 2.20 - the BOM is what keeps the
+    // three resolvable together regardless of a given module's own version string.
+    implementation(platform("com.fasterxml.jackson:jackson-bom:2.22.2"))
+    implementation("com.fasterxml.jackson.core:jackson-databind")
+    implementation("com.fasterxml.jackson.core:jackson-core")
+    implementation("com.fasterxml.jackson.core:jackson-annotations")
     implementation("org.apache.httpcomponents:httpclient:4.5.13")
     implementation("org.apache.httpcomponents:httpmime:4.5.13")
 
