@@ -97,21 +97,6 @@ public class FinalActionsPanel extends JPanel {
         githubIssueButton.setToolTipText(properties.get(KEY.REPORT_ISSUE_LINK));
         gridPanel.add(githubIssueButton);
 
-        JButton forumButton = new JButton(I18N.getMessage("gotoForum"));
-        forumButton.setIcon(Resources.loadIcon(properties.get(KEY.RES_FORUM_ICON)));
-        forumButton.setFont(buttonFont);
-        forumButton.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                openInBrowser(properties.get(KEY.SUPPORT_FORUM_LINK));
-                pageComplete = true;
-                firePropertyChange("pageComplete", !pageComplete, pageComplete);
-            }
-        });
-        forumButton.setToolTipText(properties.get(KEY.SUPPORT_FORUM_LINK));
-        gridPanel.add(forumButton);
-
         add(gridPanel, BorderLayout.CENTER);
 
         // -------- link text -------

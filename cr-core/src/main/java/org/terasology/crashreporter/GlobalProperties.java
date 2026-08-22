@@ -15,7 +15,6 @@ public final class GlobalProperties {
     private final Properties properties = new Properties();
 
     public enum KEY {
-        SUPPORT_FORUM_LINK,
         JOIN_DISCORD_LINK,
         REPORT_ISSUE_LINK,
 
@@ -32,7 +31,6 @@ public final class GlobalProperties {
         RES_FINAL_TITLE_IMAGE,
         RES_UPLOAD_TITLE_IMAGE,
         RES_GITHUB_ICON,
-        RES_FORUM_ICON,
         RES_DISCORD_ICON
     }
 
