@@ -1,0 +1,56 @@
+# This is a Gradle generated file for dependency locking.
+# Manual edits can break the build and are not advised.
+# This file is expected to be part of source control.
+# To regenerate this file, run: ./gradlew :cr-core:dependencies --write-locks
+ch.qos.logback:logback-classic:1.6.0=testRuntimeClasspath
+ch.qos.logback:logback-core:1.6.0=testRuntimeClasspath
+com.github.oowekyala.ooxml:nice-xml-messages:3.1=pmd
+com.google.code.findbugs:jsr305:3.0.2=checkstyle,compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.google.code.gson:gson:2.8.9=pmd
+com.google.errorprone:error_prone_annotations:2.11.0=checkstyle,compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.google.guava:failureaccess:1.0.1=checkstyle,compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.google.guava:guava:31.1-jre=checkstyle,compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava=checkstyle,compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.google.j2objc:j2objc-annotations:1.3=checkstyle,compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.puppycrawl.tools:checkstyle:10.2=checkstyle
+commons-beanutils:commons-beanutils:1.9.4=checkstyle
+commons-codec:commons-codec:1.11=checkstyle,compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+commons-collections:commons-collections:3.2.2=checkstyle
+commons-logging:commons-logging:1.2=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+info.picocli:picocli:4.6.3=checkstyle
+net.bytebuddy:byte-buddy-agent:1.17.7=testCompileClasspath,testRuntimeClasspath
+net.bytebuddy:byte-buddy:1.17.7=testCompileClasspath,testRuntimeClasspath
+net.sf.saxon:Saxon-HE:10.7=pmd
+net.sf.saxon:Saxon-HE:11.3=checkstyle
+net.sourceforge.pmd:pmd-ant:7.0.0-rc4=pmd
+net.sourceforge.pmd:pmd-core:7.0.0-rc4=pmd
+net.sourceforge.pmd:pmd-java:7.0.0-rc4=pmd
+org.antlr:antlr4-runtime:4.10.1=checkstyle
+org.antlr:antlr4-runtime:4.9.1=pmd
+org.apache.commons:commons-lang3:3.8.1=pmd
+org.apache.httpcomponents:httpclient:4.5.13=checkstyle,compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+org.apache.httpcomponents:httpcore:4.4.13=checkstyle,compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+org.apache.httpcomponents:httpmime:4.5.13=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+org.apiguardian:apiguardian-api:1.1.2=testCompileClasspath
+org.checkerframework:checker-qual:2.5.2=pmd
+org.checkerframework:checker-qual:3.12.0=checkstyle,compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+org.javassist:javassist:3.28.0-GA=checkstyle
+org.junit.jupiter:junit-jupiter-api:5.10.1=testCompileClasspath,testRuntimeClasspath
+org.junit.jupiter:junit-jupiter-engine:5.10.1=testRuntimeClasspath
+org.junit.jupiter:junit-jupiter-params:5.10.1=testCompileClasspath,testRuntimeClasspath
+org.junit.platform:junit-platform-commons:1.10.1=testCompileClasspath,testRuntimeClasspath
+org.junit.platform:junit-platform-engine:1.10.1=testRuntimeClasspath
+org.junit.platform:junit-platform-launcher:1.10.1=testRuntimeClasspath
+org.junit:junit-bom:5.10.1=testCompileClasspath,testRuntimeClasspath
+org.mockito:mockito-core:5.23.0=testCompileClasspath,testRuntimeClasspath
+org.objenesis:objenesis:3.3=testRuntimeClasspath
+org.opentest4j:opentest4j:1.3.0=testCompileClasspath,testRuntimeClasspath
+org.ow2.asm:asm:9.5=pmd
+org.pcollections:pcollections:3.1.3=pmd
+org.reflections:reflections:0.10.2=checkstyle
+org.slf4j:jul-to-slf4j:1.7.36=pmd
+org.slf4j:slf4j-api:2.0.18=testCompileClasspath,testRuntimeClasspath
+org.terasology.config:codemetrics:2.2.0=codeMetrics
+org.xmlresolver:xmlresolver:4.2.0=checkstyle
+org:jpastebin:1.0.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+empty=annotationProcessor,testAnnotationProcessor
