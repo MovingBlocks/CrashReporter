@@ -7,7 +7,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -325,5 +327,54 @@ public final class CrashSummary {
         body.append(pastebinLink != null ? "[PasteBin](" + pastebinLink + ")\n" : "(not uploaded)\n");
 
         return body.toString();
+    }
+
+    /**
+     * @param pastebinLink the uploaded log link, or {@code null} if the user skipped upload
+     * @return field ID to value for the issue form named by
+     *         {@link org.terasology.crashreporter.GlobalProperties.KEY#REPORT_ISSUE_TEMPLATE} - only
+     *         meaningful when a downstream app has configured one (see
+     *         {@link GitHubIssueLinkBuilder#build(String, String, String, Map)}); the IDs here match
+     *         Terasology's own {@code crash-bug-report.yml}. Fields with nothing extractable are
+     *         omitted so the user's own blank field is left for them to fill in, rather than being
+     *         pre-filled with something misleading like "unknown".
+     */
+    public Map<String, String> buildIssueFormFields(URL pastebinLink) {
+        Map<String, String> fields = new LinkedHashMap<>();
+
+        if (!engineVersion.isEmpty()) {
+            String version = displayVersion.isEmpty() ? engineVersion : engineVersion + " (" + displayVersion + ")";
+            fields.put("terasology_version", version);
+        }
+        fields.put("operating_system", System.getProperty("os.name") + " " + System.getProperty("os.version")
+                + " (" + System.getProperty("os.arch") + ")");
+        fields.put("java_version", System.getProperty("java.version"));
+
+        StringBuilder actual = new StringBuilder();
+        for (String block : exceptionBlocks) {
+            actual.append(block).append("\n\n");
+        }
+        if (moreExceptionsCount > 0) {
+            actual.append("... ").append(moreExceptionsCount).append(" more - see the full log\n");
+        }
+        fields.put("actual_behavior", actual.toString().trim());
+
+        if (pastebinLink != null) {
+            fields.put("log_details", "[PasteBin](" + pastebinLink + ")");
+        }
+
+        if (!activeModules.isEmpty()) {
+            StringBuilder modules = new StringBuilder("Active modules:\n");
+            int shown = Math.min(activeModules.size(), MAX_MODULES_LISTED);
+            for (int i = 0; i < shown; i++) {
+                modules.append("- ").append(activeModules.get(i)).append('\n');
+            }
+            if (activeModules.size() > shown) {
+                modules.append("- ... ").append(activeModules.size() - shown).append(" more\n");
+            }
+            fields.put("additional_context", modules.toString().trim());
+        }
+
+        return fields;
     }
 }

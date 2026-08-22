@@ -7,9 +7,11 @@ import org.junit.jupiter.api.Test;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -175,5 +177,56 @@ class CrashSummaryTest {
                 "Expected a fallback label and the exception's own trace when it isn't found in any log tab, got: " + body);
         assertTrue(body.contains(CrashSummaryTest.class.getName()),
                 "Expected this test's own stack frame in the fallback trace, got: " + body);
+    }
+
+    // buildIssueFormFields() feeds GitHubIssueLinkBuilder's template-based overload (see
+    // GitHubIssueLinkBuilderTest) - used instead of buildBody() when a downstream app has configured
+    // REPORT_ISSUE_TEMPLATE, landing the summary in that issue form's own fields.
+    @Test
+    void issueFormFieldsIncludeVersionOsAndTheExceptionBlocks() {
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
+        Map<String, String> fields = summary.buildIssueFormFields(null);
+
+        assertEquals("5.4.0-SNAPSHOT (Aeternum)", fields.get("terasology_version"));
+        assertTrue(fields.get("operating_system").contains(System.getProperty("os.name")), fields.get("operating_system"));
+        assertEquals(System.getProperty("java.version"), fields.get("java_version"));
+        assertTrue(fields.get("actual_behavior").contains("RuntimeException: boom"), fields.get("actual_behavior"));
+    }
+
+    @Test
+    void issueFormFieldsOmitVersionWhenNotFoundInsteadOfSayingUnknown() {
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), "no relevant lines here");
+        Map<String, String> fields = summary.buildIssueFormFields(null);
+
+        // Unlike buildBody()'s "unknown" fallback, an omitted field is left blank in the actual issue
+        // form for the user to fill in themselves - "unknown" pre-filled into a real form field would
+        // read as if the reporter deliberately couldn't tell, not as an untouched field.
+        assertNull(fields.get("terasology_version"), "Expected no terasology_version entry, got: " + fields);
+    }
+
+    @Test
+    void issueFormFieldsOmitLogDetailsWhenUploadWasSkipped() {
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
+        Map<String, String> fields = summary.buildIssueFormFields(null);
+
+        assertNull(fields.get("log_details"), "Expected no log_details entry when nothing was uploaded, got: " + fields);
+    }
+
+    @Test
+    void issueFormFieldsIncludeThePastebinLinkWhenUploaded() throws MalformedURLException {
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
+        URL link = new URL("https://pastebin.com/abc123");
+
+        Map<String, String> fields = summary.buildIssueFormFields(link);
+
+        assertTrue(fields.get("log_details").contains("https://pastebin.com/abc123"), fields.get("log_details"));
+    }
+
+    @Test
+    void issueFormFieldsIncludeActiveModulesUnderAdditionalContext() {
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
+        Map<String, String> fields = summary.buildIssueFormFields(null);
+
+        assertTrue(fields.get("additional_context").contains("engine:5.4.0-SNAPSHOT"), fields.get("additional_context"));
     }
 }

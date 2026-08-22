@@ -18,6 +18,7 @@ public final class GlobalProperties {
         SUPPORT_FORUM_LINK,
         JOIN_DISCORD_LINK,
         REPORT_ISSUE_LINK,
+        REPORT_ISSUE_TEMPLATE,
 
         RES_BANNER_IMAGE,
         RES_SERVER_ICON,

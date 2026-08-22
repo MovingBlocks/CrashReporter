@@ -97,8 +97,18 @@ public class FinalActionsPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 CrashSummary summary = CrashSummary.extract(exception, logTextSupplier.get());
-                String link = GitHubIssueLinkBuilder.build(properties.get(KEY.REPORT_ISSUE_LINK),
-                        summary.buildTitle(), summary.buildBody(uploadedFile.get()));
+                String baseUrl = properties.get(KEY.REPORT_ISSUE_LINK);
+                String template = properties.get(KEY.REPORT_ISSUE_TEMPLATE);
+                String link;
+                if (template != null && !template.isEmpty()) {
+                    // The downstream app has its own issue *form* - land the summary in its real
+                    // fields instead of overwriting the whole thing with a bespoke body.
+                    link = GitHubIssueLinkBuilder.build(baseUrl, template, summary.buildTitle(),
+                            summary.buildIssueFormFields(uploadedFile.get()));
+                } else {
+                    link = GitHubIssueLinkBuilder.build(baseUrl, summary.buildTitle(),
+                            summary.buildBody(uploadedFile.get()));
+                }
                 openInBrowser(link);
                 pageComplete = true;
                 firePropertyChange("pageComplete", !pageComplete, pageComplete);
