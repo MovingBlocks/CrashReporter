@@ -3,6 +3,8 @@
 
 package org.terasology.crashreporter.pages;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,13 +12,21 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Builds a pre-filled GitHub issue title/body from a crash: the exception itself (available
- * directly, no parsing needed), plus every other exception found across the crashed process' own
- * log tabs, and the engine version/active module list - the reporter runs in its own JVM (see #52,
- * subprocess isolation) and has no other way to reach any of the log-only information.
+ * Builds a pre-filled GitHub issue title/body from a crash: the exception itself, plus every other
+ * exception found across the crashed process' own log tabs, and the engine version/active module
+ * list - the reporter runs in its own JVM (see #52, subprocess isolation) and has no other way to
+ * reach any of the log-only information.
  * <p>
- * The regexes here mirror two fixed, narrow log lines the engine emits at startup - see
- * {@code TerasologyEngine#logEnvironmentInfo} ({@code TerasologyVersion#toString}'s
+ * On macOS, that subprocess isolation means the in-process {@code Throwable} passed to
+ * {@link #extract} is a best-effort reconstruction from just its class name and message (see
+ * {@code CrashReporter#reconstructThrowable}) - its own stack trace points into the reporter's own
+ * relaunch machinery, not the real crash site. Whenever the crash was also logged in one of the log
+ * tabs (the normal case for an engine-level crash handler), the trace captured from that log text is
+ * the real one and is used instead; the reconstructed exception's own trace is only a fallback for
+ * when nothing better is available.
+ * <p>
+ * The version/module regexes here mirror two fixed, narrow log lines the engine emits at startup -
+ * see {@code TerasologyEngine#logEnvironmentInfo} ({@code TerasologyVersion#toString}'s
  * {@code [buildNumber=..., ..., engineVersion=X, displayVersion=Y]} format) and
  * {@code RegisterMods} ({@code "Activating module: <id>:<version>"}, once per active module).
  * Log formatting is not a published API and can drift; a change there degrades this to a blank
@@ -24,6 +34,7 @@ import java.util.regex.Pattern;
  */
 public final class CrashSummary {
 
+    private static final int MAX_STACK_LINES = 15;
     private static final int MAX_MODULES_LISTED = 30;
     private static final int MAX_TITLE_MESSAGE_LENGTH = 80;
     private static final int MAX_EXCEPTIONS_LISTED = 10;
@@ -41,16 +52,16 @@ public final class CrashSummary {
             "(?m)^([\\w$]+(?:\\.[\\w$]+)+(?:Exception|Error))(:[^\\n]*)?\\n((?:[ \\t]*(?:at |Caused by:)[^\\n]*\\n?)+)");
 
     private final Throwable exception;
-    private final List<String> exceptionRows;
+    private final List<String> exceptionBlocks;
     private final int moreExceptionsCount;
     private final String engineVersion;
     private final String displayVersion;
     private final List<String> activeModules;
 
-    private CrashSummary(Throwable exception, List<String> exceptionRows, int moreExceptionsCount,
+    private CrashSummary(Throwable exception, List<String> exceptionBlocks, int moreExceptionsCount,
                           String engineVersion, String displayVersion, List<String> activeModules) {
         this.exception = exception;
-        this.exceptionRows = exceptionRows;
+        this.exceptionBlocks = exceptionBlocks;
         this.moreExceptionsCount = moreExceptionsCount;
         this.engineVersion = engineVersion;
         this.displayVersion = displayVersion;
@@ -60,67 +71,108 @@ public final class CrashSummary {
     public static CrashSummary extract(Throwable exception, String combinedLogText) {
         String text = combinedLogText != null ? combinedLogText : "";
 
-        List<String> rows = buildExceptionRows(exception, text);
+        List<String> blocks = buildExceptionBlocks(exception, text);
         int moreCount = 0;
-        if (rows.size() > MAX_EXCEPTIONS_LISTED) {
-            moreCount = rows.size() - MAX_EXCEPTIONS_LISTED;
-            rows = new ArrayList<>(rows.subList(0, MAX_EXCEPTIONS_LISTED));
+        if (blocks.size() > MAX_EXCEPTIONS_LISTED) {
+            moreCount = blocks.size() - MAX_EXCEPTIONS_LISTED;
+            blocks = new ArrayList<>(blocks.subList(0, MAX_EXCEPTIONS_LISTED));
         }
 
-        return new CrashSummary(exception, rows, moreCount,
+        return new CrashSummary(exception, blocks, moreCount,
                 firstGroup(ENGINE_VERSION_PATTERN, text), firstGroup(DISPLAY_VERSION_PATTERN, text),
                 extractActiveModules(text));
     }
 
     /**
-     * Builds one row per distinct exception found - the one that triggered this report first
-     * (attributed to whichever log tab also logged it, if any - see {@link #NO_TAB_LABEL}), then
-     * every other exception found across the log tabs, so a crash whose real cause is an earlier
-     * exception logged in a different tab (e.g. during init) isn't left out of the pre-filled issue
-     * just because it wasn't the in-process {@code exception} the reporter happened to be invoked
-     * with.
+     * Builds one Markdown block per distinct exception found - the one that triggered this report
+     * first, then every other exception found across the log tabs - so a crash whose real cause is
+     * an earlier exception logged in a different tab (e.g. during init) isn't left out of the
+     * pre-filled issue just because it wasn't the in-process {@code exception} the reporter happened
+     * to be invoked with.
      */
-    private static List<String> buildExceptionRows(Throwable exception, String combinedLogText) {
+    private static List<String> buildExceptionBlocks(Throwable exception, String combinedLogText) {
         String primaryHeader = exception.toString().trim();
         List<ExceptionEntry> found = findAllExceptions(combinedLogText);
 
-        String primaryTab = null;
+        ExceptionEntry primary = null;
         for (ExceptionEntry entry : found) {
             if (entry.header.equals(primaryHeader)) {
-                primaryTab = entry.tabName;
+                primary = entry;
                 break;
             }
         }
+        // Not logged anywhere - fall back to the exception object's own trace. On macOS that trace
+        // is a best-effort reconstruction (see the class javadoc) rather than the real crash site,
+        // but it's all that's available.
+        if (primary == null) {
+            primary = new ExceptionEntry(null, primaryHeader, framesFromThrowable(exception));
+        }
 
-        List<String> rows = new ArrayList<>();
-        rows.add(formatRow(primaryTab, primaryHeader));
+        List<String> blocks = new ArrayList<>();
+        blocks.add(formatBlock(primary));
         for (ExceptionEntry entry : found) {
             if (entry.header.equals(primaryHeader)) {
                 continue;
             }
-            String row = formatRow(entry.tabName, entry.header);
-            if (!rows.contains(row)) {
-                rows.add(row);
+            String block = formatBlock(entry);
+            if (!blocks.contains(block)) {
+                blocks.add(block);
             }
         }
-        return rows;
+        return blocks;
     }
 
-    private static String formatRow(String tabName, String header) {
-        String label = tabName != null ? tabName : NO_TAB_LABEL;
-        String message = header.length() > MAX_TITLE_MESSAGE_LENGTH
-                ? header.substring(0, MAX_TITLE_MESSAGE_LENGTH - 3) + "..."
-                : header;
-        return "**" + label + "**: `" + message + "`";
+    private static String formatBlock(ExceptionEntry entry) {
+        String label = entry.tabName != null ? entry.tabName : NO_TAB_LABEL;
+        String combined = entry.frames.isEmpty() ? entry.header : entry.header + "\n" + entry.frames;
+        return "**" + label + "**\n\n```\n" + truncateTrace(combined) + "\n```";
+    }
+
+    private static String truncateTrace(String combined) {
+        String[] lines = combined.split("\r?\n");
+        StringBuilder builder = new StringBuilder();
+        int limit = Math.min(lines.length, MAX_STACK_LINES);
+        for (int i = 0; i < limit; i++) {
+            builder.append(lines[i]).append('\n');
+        }
+        if (lines.length > limit) {
+            builder.append("... ").append(lines.length - limit).append(" more line(s) - see the full log\n");
+        }
+        return builder.toString().trim();
+    }
+
+    private static String framesFromThrowable(Throwable exception) {
+        StringWriter sink = new StringWriter();
+        exception.printStackTrace(new PrintWriter(sink));
+        String full = sink.toString();
+        // printStackTrace()'s first line is exception.toString() - already the header - so only the
+        // "at ..."/"Caused by: ..." frames after it are needed here.
+        int newlineIndex = full.indexOf('\n');
+        return newlineIndex >= 0 ? stripTrailingWhitespace(full.substring(newlineIndex + 1)) : "";
+    }
+
+    /**
+     * Like {@link String#trim()} but only at the end - frame lines are indented with a leading tab
+     * ({@code "\tat ..."}), which a plain {@code trim()} would strip from the first line along with
+     * the trailing newline it's actually meant to remove.
+     */
+    private static String stripTrailingWhitespace(String s) {
+        int end = s.length();
+        while (end > 0 && Character.isWhitespace(s.charAt(end - 1))) {
+            end--;
+        }
+        return s.substring(0, end);
     }
 
     private static final class ExceptionEntry {
         private final String tabName;
         private final String header;
+        private final String frames;
 
-        private ExceptionEntry(String tabName, String header) {
+        private ExceptionEntry(String tabName, String header, String frames) {
             this.tabName = tabName;
             this.header = header;
+            this.frames = frames;
         }
     }
 
@@ -154,7 +206,8 @@ public final class CrashSummary {
         Matcher matcher = STACK_TRACE_HEADER_PATTERN.matcher(tabText);
         while (matcher.find()) {
             String header = (matcher.group(1) + (matcher.group(2) != null ? matcher.group(2) : "")).trim();
-            found.add(new ExceptionEntry(tabName, header));
+            String frames = stripTrailingWhitespace(matcher.group(3));
+            found.add(new ExceptionEntry(tabName, header, frames));
         }
     }
 
@@ -193,20 +246,19 @@ public final class CrashSummary {
 
     /**
      * @param pastebinLink the uploaded log link, or {@code null} if the user skipped upload
-     * @return a Markdown issue body: every exception found (one row each, naming the log tab it was
-     *         found in), then environment info, then a link to the full logs
+     * @return a Markdown issue body: every exception found, one labeled code block each (naming the
+     *         log tab it was found in), then environment info, then a link to the full logs
      */
     public String buildBody(URL pastebinLink) {
         StringBuilder body = new StringBuilder();
 
         body.append("### Exceptions\n\n");
-        for (String row : exceptionRows) {
-            body.append("- ").append(row).append('\n');
+        for (String block : exceptionBlocks) {
+            body.append(block).append("\n\n");
         }
         if (moreExceptionsCount > 0) {
-            body.append("- ... ").append(moreExceptionsCount).append(" more - see the full log\n");
+            body.append("... ").append(moreExceptionsCount).append(" more - see the full log\n\n");
         }
-        body.append('\n');
 
         body.append("### Environment\n\n");
         body.append("- Terasology version: ").append(engineVersion.isEmpty() ? "unknown" : engineVersion);
