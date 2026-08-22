@@ -39,16 +39,20 @@ public final class GlobalProperties {
     public GlobalProperties() {
         String propsUrl = "/crashreporter.properties";
         String defaultPropsUrl = "/crashreporter_defaults.properties";
-        try (InputStream stream = CrashReporter.class.getResourceAsStream(defaultPropsUrl)) {
-            properties.load(stream);
+        loadIfPresent(defaultPropsUrl);
+        // Only cr-core's downstream consumers (cr-terasology, cr-destsol, ...) ship this file -
+        // it's absent when cr-core is used standalone, which getResourceAsStream signals with
+        // null rather than an IOException, so that has to be checked explicitly.
+        loadIfPresent(propsUrl);
+    }
+
+    private void loadIfPresent(String resourceUrl) {
+        try (InputStream stream = CrashReporter.class.getResourceAsStream(resourceUrl)) {
+            if (stream != null) {
+                properties.load(stream);
+            }
         } catch (IOException e) {
-            // this should never go wrong
-            System.err.println("Unable to load default properties");
-        }
-        try (InputStream stream = CrashReporter.class.getResourceAsStream(propsUrl)) {
-            properties.load(stream);
-        } catch (IOException e) {
-            System.err.println("Unable to load " + propsUrl);
+            System.err.println("Unable to load " + resourceUrl);
         }
     }
 
