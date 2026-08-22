@@ -35,7 +35,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
@@ -163,24 +162,24 @@ public class ErrorMessagePanel extends JPanel {
         logUpdateWorker.execute();
     }
 
+    /**
+     * Alphabetical by filename, not creation time (see #53 item 1): creation-time order looked
+     * arbitrary to users - two log files from one session sort as "newest first", which is
+     * neither the order they were written in nor the order their names suggest. Alphabetical is
+     * deterministic and, for Terasology's own naming (e.g. {@code Terasology-init.log} before
+     * {@code Terasology-menu.log}), happens to match session order too.
+     */
     private static void sortLogFiles(List<Path> files) {
         files.sort(new Comparator<Path>() {
 
             @Override
             public int compare(Path p0, Path p1) {
-                try {
-                    BasicFileAttributes attr0 = Files.readAttributes(p0, BasicFileAttributes.class);
-                    BasicFileAttributes attr1 = Files.readAttributes(p1, BasicFileAttributes.class);
-                    FileTime time0 = attr0.creationTime();
-                    FileTime time1 = attr1.creationTime();
-                    return time0.compareTo(time1);
-                } catch (Exception e) {
-                    // ignore silently
-                    return 0;
-                }
+                String name0 = p0.getFileName().toString();
+                String name1 = p1.getFileName().toString();
+                return name0.compareToIgnoreCase(name1);
             }
 
-        }.reversed());  // invert sort order
+        });
     }
 
     @Override
@@ -255,6 +254,18 @@ public class ErrorMessagePanel extends JPanel {
     public Path getLogFile() {
         int idx = tabPane.getSelectedIndex();
         return idx >= 0 ? logFiles.get(idx) : null;
+    }
+
+    /**
+     * @return the tab titles (filenames relative to the log folder) in the order they're
+     *         displayed - see {@link #sortLogFiles}.
+     */
+    public List<String> getTabTitles() {
+        List<String> titles = Lists.newArrayListWithCapacity(tabPane.getTabCount());
+        for (int i = 0; i < tabPane.getTabCount(); i++) {
+            titles.add(tabPane.getTitleAt(i));
+        }
+        return titles;
     }
 
     private static String readLogFileContent(Path logFile) {
