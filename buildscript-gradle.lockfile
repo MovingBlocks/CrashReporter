@@ -1,0 +1,9 @@
+# This is a Gradle generated file for dependency locking.
+# Manual edits can break the build and are not advised.
+# This file is expected to be part of source control.
+# To regenerate this file, run: ./gradlew dependencies --write-locks
+com.fasterxml.jackson:jackson-bom:2.14.2=classpath
+com.github.zafarkhaja:java-semver:0.9.0=classpath
+com.netflix.nebula:nebula-release-plugin:21.0.0=classpath
+nebula.release:nebula.release.gradle.plugin:21.0.0=classpath
+empty=
