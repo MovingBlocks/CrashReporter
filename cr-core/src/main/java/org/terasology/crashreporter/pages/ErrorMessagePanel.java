@@ -231,11 +231,22 @@ public class ErrorMessagePanel extends JPanel {
     }
 
     /**
-     * @return the (edited) log file contents
+     * @return the (edited) contents of every log file/tab, each preceded by a header naming its
+     *         tab - not just the one currently selected. With one file present, the header is
+     *         still included: the alternative (special-casing the single-file case to omit it)
+     *         would make the format depend on how many logs happen to exist, which the uploaded
+     *         text's own reader has no way to tell from the content alone.
      */
     public String getLog() {
-        int idx = tabPane.getSelectedIndex();
-        return idx >= 0 ? textAreas.get(idx).getText() : "";
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < textAreas.size(); i++) {
+            if (i > 0) {
+                builder.append(System.lineSeparator());
+            }
+            builder.append("=== ").append(tabPane.getTitleAt(i)).append(" ===").append(System.lineSeparator());
+            builder.append(textAreas.get(i).getText());
+        }
+        return builder.toString();
     }
 
     /**
