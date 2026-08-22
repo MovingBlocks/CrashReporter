@@ -119,6 +119,11 @@ public class UploadPanel extends JPanel {
         return uploadURL;
     }
 
+    /** Package-private test hook - equivalent to a real "PasteBin" click, but with a caller-supplied Callable. */
+    void uploadForTesting(Callable<URL> callable) {
+        upload(callable);
+    }
+
     private void upload(final Callable<URL> callable) {
         Runnable runnable = new Runnable() {
 
@@ -169,6 +174,14 @@ public class UploadPanel extends JPanel {
     }
 
     private void uploadFailed(final Exception e) {
+        // Printed unconditionally, not just shown in the dialog below: a JOptionPane only reaches
+        // whoever is watching the screen at that exact moment, and leaves no trace at all once
+        // it's dismissed - nothing else in this codebase logs upload failures anywhere. Whoever
+        // launched this process (a script, a supervisor, a developer tailing output) needs to be
+        // able to find out what happened after the fact, not just the person who happened to be
+        // looking right then.
+        e.printStackTrace(System.err);
+
         SwingUtilities.invokeLater(new Runnable() {
 
             @Override
