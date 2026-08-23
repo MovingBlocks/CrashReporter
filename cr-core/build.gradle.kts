@@ -109,11 +109,59 @@ tasks.jar {
     dependsOn(createVersionInfoFile)
 }
 
+// InteractiveTestCases.main only ever reports against Paths.get(".") - the JavaExec task's own
+// working directory - regardless of the log-file-name argument it's passed (that argument is
+// logged, never read again; see InteractiveTestCases.main). So the only way to control which log
+// files the reporter dialog actually finds is what's sitting in that directory when the task
+// runs. Point workingDir at a dedicated build-output folder and seed it fresh every run, so
+// "run the interactive test" reliably shows multiple tabs (and real version/module lines for the
+// GitHub pre-fill, #53 item 3) without anyone hand-creating files first.
+val interactiveTestLogDir = layout.buildDirectory.dir("interactiveTestLogs")
+
+val seedInteractiveTestLogs = tasks.register("seedInteractiveTestLogs") {
+    doLast {
+        val dir = interactiveTestLogDir.get().asFile
+        dir.mkdirs()
+        dir.listFiles { file -> file.name.endsWith(".log") }?.forEach { it.delete() }
+
+        // init/menu are the only phases LoggingContext actually defines today (INIT_PHASE, MENU) -
+        // a real session never produces more than these two. "game" is a synthetic third file,
+        // included purely to exercise the reporter's N>2-tabs case (#53 item 1's alphabetical
+        // ordering) since the engine itself doesn't currently produce that scenario.
+        File(dir, "Terasology-init.log").writeText(
+            "10:00:00.000 [main] INFO  o.t.e.version.TerasologyVersion - " +
+                "[buildNumber=42, buildId=42, buildTag=Terasology-42, buildUrl=, " +
+                "jobName=Terasology/engine/develop, dateTime=2026-08-20, displayVersion=Aeternum, " +
+                "engineVersion=5.4.0-SNAPSHOT]\n" +
+                "10:00:00.100 [main] INFO  o.t.e.core.TerasologyEngine - OS: Linux, arch: amd64, version: 6.12.85\n" +
+                "10:00:01.000 [main] INFO  o.t.e.core.modes.loadProcesses.RegisterMods - " +
+                "Activating module: engine:5.4.0-SNAPSHOT\n" +
+                "10:00:01.010 [main] INFO  o.t.e.core.modes.loadProcesses.RegisterMods - " +
+                "Activating module: CoreAssets:2.4.0\n"
+        )
+        File(dir, "Terasology-menu.log").writeText(
+            "10:05:00.000 [main] INFO  o.t.e.core.modes.StateMainMenu - Entered main menu\n"
+        )
+        File(dir, "Terasology-game.log").writeText(
+            "10:10:00.000 [main] INFO  o.t.e.core.modes.StateIngame - World loaded\n" +
+                "10:10:05.123 [main] ERROR o.t.e.core.TerasologyEngine - Uncaught exception in main loop\n" +
+                "java.lang.NullPointerException: world was null\n" +
+                "\tat org.terasology.engine.core.TerasologyEngine.run(TerasologyEngine.java:200)\n"
+        )
+    }
+}
+
 val runInteractiveTest = tasks.register<JavaExec>("runInteractiveTest") {
-    dependsOn(tasks.named("testClasses"))
+    dependsOn(tasks.named("testClasses"), seedInteractiveTestLogs)
     mainClass.set("org.terasology.crashreporter.InteractiveTestCases")
     classpath = files(sourceSets.test.get().runtimeClasspath)
-    args = listOf("setupForExtraLongMessageException", "src/test/resources/lengthy_logfile.log", "en-US")
+    workingDir = interactiveTestLogDir.get().asFile
+    // The 2nd arg (log file name) is unused by InteractiveTestCases.main - see the comment above -
+    // kept only to hold the 3rd arg (locale) in its expected position.
+    args = listOf("setupForExtraLongMessageException", "(unused)", "en-US")
+    doFirst {
+        logger.lifecycle("Seeded $workingDir with 3 sample log files - the reporter dialog should show 3 tabs.")
+    }
 }
 
 // checkstyle.xml's own SuppressionFilter references ${config_loc}/suppressions.xml, Checkstyle's
