@@ -142,11 +142,6 @@ public class UploadPanel extends JPanel {
         return uploadURL;
     }
 
-    /** Package-private test hook - equivalent to a real "PasteBin" click, but with a caller-supplied Callable. */
-    void uploadForTesting(Callable<URL> callable) {
-        upload(callable);
-    }
-
     /**
      * Runs {@code callable} on its own thread and waits up to {@link #uploadTimeoutSeconds} for it
      * to finish - {@code PastebinUploadRunnable} makes a real HTTP call with no timeout of its own,
@@ -243,7 +238,8 @@ public class UploadPanel extends JPanel {
         });
     }
 
-    private void uploadFailed(final Exception e) {
+    // Package-private so tests can call it directly, no test-only seam needed.
+    void uploadFailed(final Exception e) {
         // Printed unconditionally, not just shown in the dialog below: a JOptionPane only reaches
         // whoever is watching the screen at that exact moment, and leaves no trace at all once
         // it's dismissed - nothing else in this codebase logs upload failures anywhere. Whoever
