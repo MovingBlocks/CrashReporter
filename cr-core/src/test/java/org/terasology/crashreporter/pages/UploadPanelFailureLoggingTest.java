@@ -10,9 +10,7 @@ import org.terasology.crashreporter.GlobalProperties;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.Callable;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -41,21 +39,11 @@ class UploadPanelFailureLoggingTest {
     }
 
     @Test
-    void aFailedUploadIsPrintedToStderrNotJustShownInAPopup() throws InterruptedException {
+    void aFailedUploadIsPrintedToStderrNotJustShownInAPopup() {
         UploadPanel panel = new UploadPanel(new GlobalProperties(), () -> "log text", () -> "log.txt");
 
-        final Exception cause = new IllegalStateException("upload failed: missing Jackson class");
-        panel.uploadForTesting(new Callable<URL>() {
-            @Override
-            public URL call() throws Exception {
-                throw cause;
-            }
-        });
-
-        long deadline = System.currentTimeMillis() + 2000;
-        while (capturedErr.size() == 0 && System.currentTimeMillis() < deadline) {
-            Thread.sleep(20);
-        }
+        // Synchronous stderr print, no thread/timing dance needed.
+        panel.uploadFailed(new IllegalStateException("upload failed: missing Jackson class"));
 
         String stderr = capturedErr.toString(StandardCharsets.UTF_8);
         assertTrue(stderr.contains("IllegalStateException"), "Expected the exception type on stderr, got: " + stderr);
