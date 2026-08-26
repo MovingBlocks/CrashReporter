@@ -17,6 +17,12 @@ import java.util.Map;
  */
 public final class GitHubIssueLinkBuilder {
 
+    // GitHub rejects the whole URL past this. See github/docs#5136, crashreporter#58.
+    private static final int GITHUB_URL_BYTE_LIMIT = 8191;
+    // Safety margin.
+    private static final int URL_BYTE_BUDGET = GITHUB_URL_BYTE_LIMIT - 200;
+    private static final String TRUNCATED_SUFFIX = "\n... truncated, see the full log";
+
     private GitHubIssueLinkBuilder() {
     }
 
@@ -24,30 +30,67 @@ public final class GitHubIssueLinkBuilder {
         if (baseUrl == null) {
             return null;
         }
-        String query = "title=" + encode(title) + "&body=" + encode(body);
-        return baseUrl + (baseUrl.contains("?") ? "&" : "?") + query;
+        String separator = baseUrl.contains("?") ? "&" : "?";
+        String encodedTitle = encode(title);
+        int budget = URL_BYTE_BUDGET - baseUrl.length() - separator.length()
+                - "title=".length() - encodedTitle.length() - "&body=".length();
+        String encodedBody = fitToBudget(body, budget);
+        String query = "title=" + encodedTitle + "&body=" + (encodedBody != null ? encodedBody : "");
+        return baseUrl + separator + query;
     }
 
     /**
-     * @param template the issue form's filename (e.g. {@code "crash-bug-report.yml"}), as it appears
-     *         under {@code .github/ISSUE_TEMPLATE/} in the target repo
-     * @param fields field ID to value - entries with a {@code null}/empty value are omitted, leaving
-     *         that field for the user to fill in themselves rather than pre-filling it blank
+     * @param template issue form filename under {@code .github/ISSUE_TEMPLATE/}
+     * @param fields field ID to value. Null/empty value: field omitted. Too long: truncated or
+     *         dropped, whichever fits.
      */
     public static String build(String baseUrl, String template, String title, Map<String, String> fields) {
         if (baseUrl == null) {
             return null;
         }
+        String separator = baseUrl.contains("?") ? "&" : "?";
         StringBuilder query = new StringBuilder("template=").append(encode(template))
                 .append("&title=").append(encode(title));
+        int budget = URL_BYTE_BUDGET - baseUrl.length() - separator.length() - query.length();
+
         for (Map.Entry<String, String> field : fields.entrySet()) {
             String value = field.getValue();
             if (value == null || value.isEmpty()) {
                 continue;
             }
-            query.append('&').append(field.getKey()).append('=').append(encode(value));
+            String key = field.getKey();
+            int overhead = key.length() + 2; // '&' + key + '='
+            String encoded = fitToBudget(value, budget - overhead);
+            if (encoded == null) {
+                continue;
+            }
+            query.append('&').append(key).append('=').append(encoded);
+            budget -= overhead + encoded.length();
         }
-        return baseUrl + (baseUrl.contains("?") ? "&" : "?") + query;
+        return baseUrl + separator + query;
+    }
+
+    /**
+     * URL-encodes {@code value}, truncating with {@link #TRUNCATED_SUFFIX} to fit {@code maxBytes}.
+     * Null if even the suffix doesn't fit. Truncates the raw text first, then encodes - never
+     * splits mid-escape.
+     */
+    private static String fitToBudget(String value, int maxBytes) {
+        String encoded = encode(value);
+        if (encoded.length() <= maxBytes) {
+            return encoded;
+        }
+        String suffix = encode(TRUNCATED_SUFFIX);
+        if (suffix.length() > maxBytes) {
+            return null;
+        }
+        String truncated = value;
+        String withSuffix;
+        do {
+            truncated = truncated.substring(0, truncated.length() - 1);
+            withSuffix = encode(truncated) + suffix;
+        } while (!truncated.isEmpty() && withSuffix.length() > maxBytes);
+        return truncated.isEmpty() ? null : withSuffix;
     }
 
     private static String encode(String value) {

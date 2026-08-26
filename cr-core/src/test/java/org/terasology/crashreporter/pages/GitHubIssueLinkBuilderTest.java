@@ -76,4 +76,50 @@ class GitHubIssueLinkBuilderTest {
         assertFalse(link.contains("java_version="), link);
         assertTrue(link.contains("operating_system=Linux"), link);
     }
+
+    @Test
+    void bodyBuildStaysUnderGitHubsUrlByteLimit() {
+        // GitHub rejects the whole thing past 8191 bytes. Must truncate.
+        String hugeBody = "x".repeat(50_000);
+
+        String link = GitHubIssueLinkBuilder.build("https://github.com/MovingBlocks/Terasology/issues/new",
+                "Crash: NullPointerException", hugeBody);
+
+        assertTrue(link.length() < 8191, "link was " + link.length() + " bytes: " + link);
+        assertTrue(link.contains("truncated"), link);
+    }
+
+    @Test
+    void formBuildStaysUnderGitHubsUrlByteLimit() {
+        Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("terasology_version", "5.4.0-SNAPSHOT");
+        fields.put("operating_system", "Mac OS X");
+        fields.put("actual_behavior", "x".repeat(50_000));
+        fields.put("additional_context", "y".repeat(50_000));
+
+        String link = GitHubIssueLinkBuilder.build("https://github.com/MovingBlocks/Terasology/issues/new",
+                "crash-bug-report.yml", "Crash: NullPointerException", fields);
+
+        assertTrue(link.length() < 8191, "link was " + link.length() + " bytes: " + link);
+        // Early fields stay full, only the overflowing tail gets trimmed.
+        assertTrue(link.contains("terasology_version=5.4.0-SNAPSHOT"), link);
+        assertTrue(link.contains("operating_system=Mac+OS+X"), link);
+    }
+
+    @Test
+    void truncationNeverSplitsAPercentEscape() {
+        Map<String, String> fields = new LinkedHashMap<>();
+        // Every char is a 3-byte "%XX" escape, so a mid-escape cut would hide here.
+        fields.put("actual_behavior", "&".repeat(50_000));
+
+        String link = GitHubIssueLinkBuilder.build("https://example.com/issues/new", "t.yml", "t", fields);
+
+        int valueStart = link.indexOf("actual_behavior=") + "actual_behavior=".length();
+        String value = link.substring(valueStart);
+        for (int i = 0; i < value.length(); i++) {
+            if (value.charAt(i) == '%') {
+                assertTrue(i + 2 < value.length(), "truncated escape at end of value: " + value);
+            }
+        }
+    }
 }
