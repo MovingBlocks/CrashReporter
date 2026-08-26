@@ -15,6 +15,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Desktop;
@@ -22,6 +23,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
@@ -116,6 +118,23 @@ public class FinalActionsPanel extends JPanel {
         });
         githubIssueButton.setToolTipText(properties.get(KEY.REPORT_ISSUE_LINK));
         gridPanel.add(githubIssueButton);
+
+        String oauthClientId = properties.get(KEY.REPORT_ISSUE_OAUTH_CLIENT_ID);
+        String[] ownerRepo = GitHubIssueApiClient.parseOwnerRepo(properties.get(KEY.REPORT_ISSUE_LINK));
+        if (oauthClientId != null && !oauthClientId.isEmpty() && ownerRepo != null) {
+            JButton submitDirectlyButton = new JButton(I18N.getMessage("reportIssueDirectly"));
+            submitDirectlyButton.setFont(buttonFont);
+            submitDirectlyButton.setIcon(Resources.loadIcon(properties.get(KEY.RES_GITHUB_ICON)));
+            submitDirectlyButton.addActionListener(e -> {
+                CrashSummary summary = CrashSummary.extract(exception, logTextSupplier.get());
+                Window window = SwingUtilities.getWindowAncestor(this);
+                new GitHubLoginDialog(window, oauthClientId, ownerRepo[0], ownerRepo[1],
+                        summary.buildTitle(), summary.buildBody(uploadedFile.get())).setVisible(true);
+                pageComplete = true;
+                firePropertyChange("pageComplete", !pageComplete, pageComplete);
+            });
+            gridPanel.add(submitDirectlyButton);
+        }
 
         JButton forumButton = new JButton(I18N.getMessage("gotoForum"));
         forumButton.setIcon(Resources.loadIcon(properties.get(KEY.RES_FORUM_ICON)));

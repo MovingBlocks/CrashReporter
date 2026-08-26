@@ -19,6 +19,9 @@ public final class GlobalProperties {
         JOIN_DISCORD_LINK,
         REPORT_ISSUE_LINK,
         REPORT_ISSUE_TEMPLATE,
+        // GitHub OAuth App client ID with Device Flow enabled. Unset by default - see
+        // GitHubDeviceLogin's javadoc. When unset, the "submit directly" button is hidden.
+        REPORT_ISSUE_OAUTH_CLIENT_ID,
 
         RES_BANNER_IMAGE,
         RES_SERVER_ICON,
