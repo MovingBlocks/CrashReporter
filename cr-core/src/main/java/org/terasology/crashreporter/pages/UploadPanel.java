@@ -28,6 +28,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -36,6 +44,8 @@ import java.util.function.Supplier;
 public class UploadPanel extends JPanel {
 
     private static final long serialVersionUID = -8247883237201535146L;
+
+    private static final long DEFAULT_UPLOAD_TIMEOUT_SECONDS = 30;
 
     private JButton uploadPasteBinButton;
     private boolean isComplete;
@@ -47,14 +57,27 @@ public class UploadPanel extends JPanel {
 
     private final Supplier<String> logFileNameSupplier;
 
+    private final long uploadTimeoutSeconds;
+
     private JButton uploadSkipButton;
 
     private JLabel titleLabel;
 
     public UploadPanel(GlobalProperties properties, Supplier<String> logTextSupp, Supplier<String> logFileNameSupp) {
+        this(properties, logTextSupp, logFileNameSupp, DEFAULT_UPLOAD_TIMEOUT_SECONDS);
+    }
+
+    /**
+     * @param uploadTimeoutSeconds how long {@link #upload} waits for the upload {@link Callable} before treating it
+     *         as failed - package-private constructor so tests can use a short timeout instead of
+     *         {@link #DEFAULT_UPLOAD_TIMEOUT_SECONDS}.
+     */
+    UploadPanel(GlobalProperties properties, Supplier<String> logTextSupp, Supplier<String> logFileNameSupp,
+                long uploadTimeoutSeconds) {
 
         this.textSupplier = logTextSupp;
         this.logFileNameSupplier = logFileNameSupp;
+        this.uploadTimeoutSeconds = uploadTimeoutSeconds;
         setLayout(new BorderLayout(50, 20));
         statusLabel = new JLabel(I18N.getMessage("noUpload"), SwingConstants.RIGHT);
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.BOLD));
@@ -119,22 +142,69 @@ public class UploadPanel extends JPanel {
         return uploadURL;
     }
 
+    /**
+     * Runs {@code callable} on its own thread and waits up to {@link #uploadTimeoutSeconds} for it
+     * to finish - {@code PastebinUploadRunnable} makes a real HTTP call with no timeout of its own,
+     * so without one here a slow or unreachable server leaves the button disabled and the status
+     * label reading "please wait" forever, with no way for the user to tell the difference between
+     * "still working" and "will never finish".
+     */
     private void upload(final Callable<URL> callable) {
-        Runnable runnable = new Runnable() {
+        final ExecutorService executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r, "Upload");
+                thread.setDaemon(true);
+                return thread;
+            }
+        });
+        final Future<URL> future = executor.submit(callable);
 
+        Thread watcher = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    URL link = callable.call();
-                    uploadSuccess(link);
-                } catch (Exception e) {
-                    uploadFailed(e);
+                    awaitUpload(future, uploadTimeoutSeconds, new Consumer<URL>() {
+                        @Override
+                        public void accept(URL link) {
+                            uploadSuccess(link);
+                        }
+                    }, new Consumer<Exception>() {
+                        @Override
+                        public void accept(Exception e) {
+                            uploadFailed(e);
+                        }
+                    });
+                } finally {
+                    executor.shutdownNow();
                 }
             }
-        };
+        }, "Upload-Watcher");
+        watcher.setDaemon(true);
+        watcher.start();
+    }
 
-        Thread thread = new Thread(runnable, "Upload");
-        thread.start();
+    /**
+     * Waits up to {@code timeoutSeconds} for {@code future}, then dispatches to exactly one of the
+     * two callbacks - split out from {@link #upload} as a plain, Swing-free method so the timeout
+     * and exception-unwrapping logic can be tested directly against a real {@link Future} without
+     * needing a full {@code UploadPanel}/button-click harness.
+     */
+    static void awaitUpload(Future<URL> future, long timeoutSeconds, Consumer<URL> onSuccess, Consumer<Exception> onFailure) {
+        try {
+            URL link = future.get(timeoutSeconds, TimeUnit.SECONDS);
+            onSuccess.accept(link);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            onFailure.accept(new IOException(
+                    "Upload timed out after " + timeoutSeconds + "s - the server may be unreachable", e));
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            onFailure.accept(cause instanceof Exception ? (Exception) cause : e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            onFailure.accept(e);
+        }
     }
 
     private void updateStatus() {
@@ -168,7 +238,16 @@ public class UploadPanel extends JPanel {
         });
     }
 
-    private void uploadFailed(final Exception e) {
+    // Package-private so tests can call it directly, no test-only seam needed.
+    void uploadFailed(final Exception e) {
+        // Printed unconditionally, not just shown in the dialog below: a JOptionPane only reaches
+        // whoever is watching the screen at that exact moment, and leaves no trace at all once
+        // it's dismissed - nothing else in this codebase logs upload failures anywhere. Whoever
+        // launched this process (a script, a supervisor, a developer tailing output) needs to be
+        // able to find out what happened after the fact, not just the person who happened to be
+        // looking right then.
+        e.printStackTrace(System.err);
+
         SwingUtilities.invokeLater(new Runnable() {
 
             @Override
