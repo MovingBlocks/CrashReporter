@@ -2,6 +2,10 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 # To regenerate this file, run: ./gradlew :cr-terasology:dependencies --write-locks
+com.fasterxml.jackson.core:jackson-annotations:2.22=runtimeClasspath,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-core:2.22.2=runtimeClasspath,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-databind:2.22.2=runtimeClasspath,testRuntimeClasspath
+com.fasterxml.jackson:jackson-bom:2.22.2=runtimeClasspath,testRuntimeClasspath
 com.google.code.findbugs:jsr305:3.0.2=runtimeClasspath,testRuntimeClasspath
 com.google.errorprone:error_prone_annotations:2.11.0=runtimeClasspath,testRuntimeClasspath
 com.google.guava:failureaccess:1.0.1=runtimeClasspath,testRuntimeClasspath
@@ -14,5 +18,6 @@ org.apache.httpcomponents:httpclient:4.5.13=runtimeClasspath,testRuntimeClasspat
 org.apache.httpcomponents:httpcore:4.4.13=runtimeClasspath,testRuntimeClasspath
 org.apache.httpcomponents:httpmime:4.5.13=runtimeClasspath,testRuntimeClasspath
 org.checkerframework:checker-qual:3.12.0=runtimeClasspath,testRuntimeClasspath
+org.json:json:20260814=runtimeClasspath,testRuntimeClasspath
 org:jpastebin:1.0.1=runtimeClasspath,testRuntimeClasspath
 empty=annotationProcessor,compileClasspath,testAnnotationProcessor,testCompileClasspath
