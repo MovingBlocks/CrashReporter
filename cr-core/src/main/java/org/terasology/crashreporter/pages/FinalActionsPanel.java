@@ -18,7 +18,6 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
-import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
@@ -28,9 +27,6 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.function.Supplier;
 
@@ -83,7 +79,7 @@ public class FinalActionsPanel extends JPanel {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                openInBrowser(properties.get(KEY.JOIN_DISCORD_LINK));
+                BrowserLauncher.open(properties.get(KEY.JOIN_DISCORD_LINK));
                 pageComplete = true;
                 firePropertyChange("pageComplete", !pageComplete, pageComplete);
             }
@@ -111,7 +107,7 @@ public class FinalActionsPanel extends JPanel {
                     link = GitHubIssueLinkBuilder.build(baseUrl, summary.buildTitle(),
                             summary.buildBody(uploadedFile.get()));
                 }
-                openInBrowser(link);
+                BrowserLauncher.open(link);
                 pageComplete = true;
                 firePropertyChange("pageComplete", !pageComplete, pageComplete);
             }
@@ -143,7 +139,7 @@ public class FinalActionsPanel extends JPanel {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                openInBrowser(properties.get(KEY.SUPPORT_FORUM_LINK));
+                BrowserLauncher.open(properties.get(KEY.SUPPORT_FORUM_LINK));
                 pageComplete = true;
                 firePropertyChange("pageComplete", !pageComplete, pageComplete);
             }
@@ -199,19 +195,5 @@ public class FinalActionsPanel extends JPanel {
         copyLinkButton.setEnabled(log != null);
         linkText.setText(text);
         linkText.setEnabled(log != null);
-    }
-
-    private static void openInBrowser(String url) {
-        if (Desktop.isDesktopSupported()) {
-            Desktop desktop = Desktop.getDesktop();
-
-            if (desktop.isSupported(Desktop.Action.BROWSE)) {
-                try {
-                    desktop.browse(new URI(url));
-                } catch (IOException | URISyntaxException e) {
-                    e.printStackTrace(System.err);
-                }
-            }
-        }
     }
 }
