@@ -78,6 +78,9 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-annotations")
     implementation("org.apache.httpcomponents:httpclient:4.5.13")
     implementation("org.apache.httpcomponents:httpmime:4.5.13")
+    // GitHub issue-creation API request/response bodies (GitHubIssueApiClient) - small,
+    // dependency-free, no reason to hand-roll JSON escaping/parsing instead.
+    implementation("org.json:json:20260814")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.1")
