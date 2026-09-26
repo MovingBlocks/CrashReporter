@@ -15,6 +15,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Desktop;
@@ -22,6 +23,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
@@ -39,6 +41,10 @@ public class FinalActionsPanel extends JPanel {
 
     private static final long serialVersionUID = 2639334979749507943L;
 
+    private final Throwable exception;
+
+    private final Supplier<String> logTextSupplier;
+
     private final Supplier<URL> uploadedFile;
 
     private final JTextArea linkText;
@@ -47,8 +53,11 @@ public class FinalActionsPanel extends JPanel {
 
     private boolean pageComplete;
 
-    public FinalActionsPanel(GlobalProperties properties, Supplier<URL> uploadedFile) {
+    public FinalActionsPanel(GlobalProperties properties, Throwable exception, Supplier<String> logTextSupplier,
+                              Supplier<URL> uploadedFile) {
 
+        this.exception = exception;
+        this.logTextSupplier = logTextSupplier;
         this.uploadedFile = uploadedFile;
 
         setLayout(new BorderLayout(0, 10));
@@ -89,13 +98,43 @@ public class FinalActionsPanel extends JPanel {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                openInBrowser(properties.get(KEY.REPORT_ISSUE_LINK));
+                CrashSummary summary = CrashSummary.extract(exception, logTextSupplier.get());
+                String baseUrl = properties.get(KEY.REPORT_ISSUE_LINK);
+                String template = properties.get(KEY.REPORT_ISSUE_TEMPLATE);
+                String link;
+                if (template != null && !template.isEmpty()) {
+                    // The downstream app has its own issue *form* - land the summary in its real
+                    // fields instead of overwriting the whole thing with a bespoke body.
+                    link = GitHubIssueLinkBuilder.build(baseUrl, template, summary.buildTitle(),
+                            summary.buildIssueFormFields(uploadedFile.get()));
+                } else {
+                    link = GitHubIssueLinkBuilder.build(baseUrl, summary.buildTitle(),
+                            summary.buildBody(uploadedFile.get()));
+                }
+                openInBrowser(link);
                 pageComplete = true;
                 firePropertyChange("pageComplete", !pageComplete, pageComplete);
             }
         });
         githubIssueButton.setToolTipText(properties.get(KEY.REPORT_ISSUE_LINK));
         gridPanel.add(githubIssueButton);
+
+        String oauthClientId = properties.get(KEY.REPORT_ISSUE_OAUTH_CLIENT_ID);
+        String[] ownerRepo = GitHubIssueApiClient.parseOwnerRepo(properties.get(KEY.REPORT_ISSUE_LINK));
+        if (oauthClientId != null && !oauthClientId.isEmpty() && ownerRepo != null) {
+            JButton submitDirectlyButton = new JButton(I18N.getMessage("reportIssueDirectly"));
+            submitDirectlyButton.setFont(buttonFont);
+            submitDirectlyButton.setIcon(Resources.loadIcon(properties.get(KEY.RES_GITHUB_ICON)));
+            submitDirectlyButton.addActionListener(e -> {
+                CrashSummary summary = CrashSummary.extract(exception, logTextSupplier.get());
+                Window window = SwingUtilities.getWindowAncestor(this);
+                new GitHubLoginDialog(window, oauthClientId, ownerRepo[0], ownerRepo[1],
+                        summary.buildTitle(), summary.buildBody(uploadedFile.get())).setVisible(true);
+                pageComplete = true;
+                firePropertyChange("pageComplete", !pageComplete, pageComplete);
+            });
+            gridPanel.add(submitDirectlyButton);
+        }
 
         JButton forumButton = new JButton(I18N.getMessage("gotoForum"));
         forumButton.setIcon(Resources.loadIcon(properties.get(KEY.RES_FORUM_ICON)));

@@ -74,7 +74,13 @@ public class RootPanel extends JPanel {
             }
         });
         pages.add(uploadPanel);
-        pages.add(new FinalActionsPanel(properties, new Supplier<URL>() {
+        pages.add(new FinalActionsPanel(properties, exception, new Supplier<String>() {
+
+            @Override
+            public String get() {
+                return errorMessagePanel.getLog();
+            }
+        }, new Supplier<URL>() {
 
             @Override
             public URL get() {
