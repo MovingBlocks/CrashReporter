@@ -31,12 +31,14 @@ class ErrorMessagePanelTabOrderTest {
         Thread.sleep(10);
         writeLog(logFolder, "Terasology-init.log", "INIT");
 
-        ErrorMessagePanel panel = new ErrorMessagePanel(new GlobalProperties(), new RuntimeException("boom"),
-                logFolder, CrashReporter.MODE.CRASH_REPORTER);
-
-        List<String> titles = panel.getTabTitles();
-        assertEquals(Arrays.asList("Terasology-init.log", "Terasology-menu.log"), titles,
-                "Expected tabs in alphabetical order regardless of which file was created first, got: " + titles);
+        // Closed before returning so the panel's open readers and folder watch don't stop JUnit
+        // deleting the temp folder on Windows.
+        try (ErrorMessagePanel panel = new ErrorMessagePanel(new GlobalProperties(), new RuntimeException("boom"),
+                logFolder, CrashReporter.MODE.CRASH_REPORTER)) {
+            List<String> titles = panel.getTabTitles();
+            assertEquals(Arrays.asList("Terasology-init.log", "Terasology-menu.log"), titles,
+                    "Expected tabs in alphabetical order regardless of which file was created first, got: " + titles);
+        }
     }
 
     private static void writeLog(Path folder, String name, String content) throws IOException {
