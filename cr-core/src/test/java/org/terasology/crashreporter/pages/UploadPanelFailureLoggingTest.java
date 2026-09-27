@@ -10,6 +10,7 @@ import org.terasology.crashreporter.GlobalProperties;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,10 +28,11 @@ class UploadPanelFailureLoggingTest {
     private ByteArrayOutputStream capturedErr;
 
     @BeforeEach
-    void redirectStderr() {
+    void redirectStderr() throws UnsupportedEncodingException {
         originalErr = System.err;
         capturedErr = new ByteArrayOutputStream();
-        System.setErr(new PrintStream(capturedErr, true, StandardCharsets.UTF_8));
+        // String charset overloads: the Charset ones are Java 10+, and cr-core targets Java 8.
+        System.setErr(new PrintStream(capturedErr, true, StandardCharsets.UTF_8.name()));
     }
 
     @AfterEach
@@ -39,13 +41,13 @@ class UploadPanelFailureLoggingTest {
     }
 
     @Test
-    void aFailedUploadIsPrintedToStderrNotJustShownInAPopup() {
+    void aFailedUploadIsPrintedToStderrNotJustShownInAPopup() throws UnsupportedEncodingException {
         UploadPanel panel = new UploadPanel(new GlobalProperties(), () -> "log text", () -> "log.txt");
 
         // Synchronous stderr print, no thread/timing dance needed.
         panel.uploadFailed(new IllegalStateException("upload failed: missing Jackson class"));
 
-        String stderr = capturedErr.toString(StandardCharsets.UTF_8);
+        String stderr = capturedErr.toString(StandardCharsets.UTF_8.name());
         assertTrue(stderr.contains("IllegalStateException"), "Expected the exception type on stderr, got: " + stderr);
         assertTrue(stderr.contains("upload failed: missing Jackson class"),
                 "Expected the exception message on stderr, got: " + stderr);

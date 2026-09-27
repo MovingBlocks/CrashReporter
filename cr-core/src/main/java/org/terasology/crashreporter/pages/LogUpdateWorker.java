@@ -84,6 +84,10 @@ public class LogUpdateWorker extends SwingWorker<Void, WatchEvent<Path>> impleme
 
     @Override
     protected void process(List<WatchEvent<Path>> chunks) {
+        if (isCancelled()) {
+            // publish() may have queued this before close() ran; the panel is gone.
+            return;
+        }
         super.process(chunks);
         for (WatchEvent<Path> event : chunks) {
             WatchEvent.Kind<?> kind = event.kind();

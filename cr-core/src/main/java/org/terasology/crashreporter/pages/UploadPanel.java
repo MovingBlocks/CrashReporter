@@ -18,6 +18,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.Font;
+import java.awt.GraphicsEnvironment;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -249,8 +250,12 @@ public class UploadPanel extends JPanel {
 
             @Override
             public void run() {
-                String uploadFailed = I18N.getMessage("uploadFailed");
-                JOptionPane.showMessageDialog(null, e.getLocalizedMessage(), uploadFailed, JOptionPane.ERROR_MESSAGE);
+                // Headless (CI, unit tests): stderr above is the whole report; a modal here would
+                // throw HeadlessException on the EDT or, with a display, block the test JVM.
+                if (!GraphicsEnvironment.isHeadless()) {
+                    String uploadFailed = I18N.getMessage("uploadFailed");
+                    JOptionPane.showMessageDialog(null, e.getLocalizedMessage(), uploadFailed, JOptionPane.ERROR_MESSAGE);
+                }
                 uploadPasteBinButton.setEnabled(true);
                 updateStatus();
             }

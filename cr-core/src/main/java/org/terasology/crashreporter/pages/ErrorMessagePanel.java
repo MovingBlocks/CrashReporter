@@ -61,6 +61,10 @@ public class ErrorMessagePanel extends JPanel implements Closeable {
     // logReaders is the list of each log file's reader
     private final List<RandomAccessFile> logReaders = Lists.newArrayList();
 
+    // SwingWorker may still deliver already-published events to the EDT after cancel(); this
+    // stops those late callbacks from reopening a reader or indexing into the cleared list.
+    private volatile boolean closed;
+
     /**
      * @param exception     the exception to display
      * @param logFileFolder the folder that contains the relevant log files
@@ -190,6 +194,7 @@ public class ErrorMessagePanel extends JPanel implements Closeable {
 
     @Override
     public void close() throws IOException {
+        closed = true;
         IOException first = null;
         try {
             logUpdateWorker.close();
@@ -341,6 +346,9 @@ public class ErrorMessagePanel extends JPanel implements Closeable {
      * @param newLogPath    path of the new log file
      */
     private void addNewTab(Path logFileFolder, Path newLogPath) {
+        if (closed) {
+            return;
+        }
         logFiles.add(newLogPath);
         sortLogFiles(logFiles);
         int index = logFiles.indexOf(newLogPath);
@@ -368,6 +376,9 @@ public class ErrorMessagePanel extends JPanel implements Closeable {
      * @param changedLogPath path of the changed log file
      */
     private void updateLog(Path changedLogPath) {
+        if (closed) {
+            return;
+        }
         int index = logFiles.indexOf(changedLogPath);
         if (index != -1) {
             RandomAccessFile logReader = logReaders.get(index);

@@ -214,6 +214,9 @@ tasks.javadoc {
 
 tasks.test {
     useJUnitPlatform()
+    // Same environment as CI, on every machine: no test may pop a real dialog on a developer's
+    // screen, and headless is where a stray JOptionPane fails loudly instead of blocking.
+    systemProperty("java.awt.headless", "true")
     // InteractiveTestCases is a manual runner (see runInteractiveTest), not an automated test -
     // there are no @Test methods in this project.
     failOnNoDiscoveredTests.set(false)
