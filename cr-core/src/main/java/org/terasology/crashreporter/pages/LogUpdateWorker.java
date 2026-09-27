@@ -5,7 +5,9 @@ package org.terasology.crashreporter.pages;
 import com.sun.nio.file.SensitivityWatchEventModifier;
 
 import javax.swing.SwingWorker;
+import java.io.Closeable;
 import java.io.IOException;
+import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
@@ -20,7 +22,7 @@ import java.util.List;
  * It watches change in the background thread, see {@code doInBackground} method.
  * It processes event in EDT thread, see {@code process} method.
  */
-public class LogUpdateWorker extends SwingWorker<Void, WatchEvent<Path>> {
+public class LogUpdateWorker extends SwingWorker<Void, WatchEvent<Path>> implements Closeable {
 
     public static final String CREATED = "CREATE_LOG";
     public static final String MODIFIED = "MODIFIED_LOG";
@@ -45,8 +47,8 @@ public class LogUpdateWorker extends SwingWorker<Void, WatchEvent<Path>> {
             WatchKey key;
             try {
                 key = watchService.take();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            } catch (InterruptedException | ClosedWatchServiceException e) {
+                // Either way someone asked us to stop - see close().
                 return null;
             }
 
@@ -65,6 +67,19 @@ public class LogUpdateWorker extends SwingWorker<Void, WatchEvent<Path>> {
             }
         }
         return null;
+    }
+
+    /**
+     * Stops watching and releases the {@link WatchService}. On Windows an open watch on a
+     * directory keeps that directory from being deleted, so anything that owns a panel with a
+     * worker (the dialog, a test's temp folder) needs this to run before the folder goes away.
+     */
+    @Override
+    public void close() throws IOException {
+        cancel(true);
+        if (watchService != null) {
+            watchService.close();
+        }
     }
 
     @Override

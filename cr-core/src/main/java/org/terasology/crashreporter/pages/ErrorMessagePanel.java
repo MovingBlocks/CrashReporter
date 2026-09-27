@@ -23,6 +23,7 @@ import java.awt.BorderLayout;
 import java.awt.Font;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -41,8 +42,13 @@ import java.util.List;
 
 /**
  * Shows the error message plus stack trace.
+ *
+ * <p>Holds a {@link RandomAccessFile} per log tab (to tail appended lines) and a directory watch,
+ * for as long as it lives. {@link #close()} releases them; the dialog triggers it through
+ * {@link #removeNotify()} on dispose, and tests must call it before their temp folder is cleaned up -
+ * Windows refuses to delete a directory while either handle is open.
  */
-public class ErrorMessagePanel extends JPanel {
+public class ErrorMessagePanel extends JPanel implements Closeable {
 
     private static final long serialVersionUID = 8449689452512733452L;
 
@@ -180,6 +186,44 @@ public class ErrorMessagePanel extends JPanel {
             }
 
         });
+    }
+
+    @Override
+    public void close() throws IOException {
+        IOException first = null;
+        try {
+            logUpdateWorker.close();
+        } catch (IOException e) {
+            first = e;
+        }
+        for (RandomAccessFile logReader : logReaders) {
+            try {
+                logReader.close();
+            } catch (IOException e) {
+                if (first == null) {
+                    first = e;
+                }
+            }
+        }
+        logReaders.clear();
+        if (first != null) {
+            throw first;
+        }
+    }
+
+    /**
+     * Swing calls this when the panel leaves a displayable hierarchy - for this dialog, that is
+     * dispose. Card-layout page switches do not remove the panel, so tailing keeps working while
+     * the user moves between pages.
+     */
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        try {
+            close();
+        } catch (IOException e) {
+            e.printStackTrace(System.err);
+        }
     }
 
     @Override
