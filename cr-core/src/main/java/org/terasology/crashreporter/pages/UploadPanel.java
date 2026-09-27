@@ -17,15 +17,12 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Cursor;
-import java.awt.Desktop;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
@@ -145,7 +142,7 @@ public class UploadPanel extends JPanel {
             statusLabel.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(java.awt.event.MouseEvent e) {
-                    openInBrowser(uploadURL.toString());
+                    BrowserLauncher.open(uploadURL.toString());
                 }
             });
         } else {
@@ -179,20 +176,6 @@ public class UploadPanel extends JPanel {
                 updateStatus();
             }
         });
-    }
-
-    private static void openInBrowser(String url) {
-        if (Desktop.isDesktopSupported()) {
-            Desktop desktop = Desktop.getDesktop();
-
-            if (desktop.isSupported(Desktop.Action.BROWSE)) {
-                try {
-                    desktop.browse(new URI(url));
-                } catch (IOException | URISyntaxException e) {
-                    e.printStackTrace(System.err);
-                }
-            }
-        }
     }
 
 }
