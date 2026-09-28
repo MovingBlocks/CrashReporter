@@ -14,7 +14,6 @@ buildscript {
 // For generating IntelliJ project files
 plugins {
     idea
-    id("nebula.release") version "21.0.0"
 }
 
 tasks.wrapper {
