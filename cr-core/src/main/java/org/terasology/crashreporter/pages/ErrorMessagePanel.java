@@ -63,7 +63,8 @@ public class ErrorMessagePanel extends JPanel implements Closeable {
 
     // SwingWorker may still deliver already-published events to the EDT after cancel(); this
     // stops those late callbacks from reopening a reader or indexing into the cleared list.
-    private volatile boolean closed;
+    // Guarded by this panel's monitor, see close().
+    private boolean closed;
 
     /**
      * @param exception     the exception to display
@@ -192,8 +193,10 @@ public class ErrorMessagePanel extends JPanel implements Closeable {
         });
     }
 
+    // synchronized with addNewTab/updateLog: the dialog closes on the EDT, where callbacks already
+    // run, but a test closes from its own thread while a queued callback may be mid-flight.
     @Override
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
         closed = true;
         IOException first = null;
         try {
@@ -345,7 +348,7 @@ public class ErrorMessagePanel extends JPanel implements Closeable {
      * @param logFileFolder log folder
      * @param newLogPath    path of the new log file
      */
-    private void addNewTab(Path logFileFolder, Path newLogPath) {
+    private synchronized void addNewTab(Path logFileFolder, Path newLogPath) {
         if (closed) {
             return;
         }
@@ -375,7 +378,7 @@ public class ErrorMessagePanel extends JPanel implements Closeable {
      * Update log information
      * @param changedLogPath path of the changed log file
      */
-    private void updateLog(Path changedLogPath) {
+    private synchronized void updateLog(Path changedLogPath) {
         if (closed) {
             return;
         }
