@@ -23,6 +23,7 @@ import java.awt.BorderLayout;
 import java.awt.Font;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -41,8 +42,13 @@ import java.util.List;
 
 /**
  * Shows the error message plus stack trace.
+ *
+ * <p>Holds a {@link RandomAccessFile} per log tab (to tail appended lines) and a directory watch,
+ * for as long as it lives. {@link #close()} releases them; the dialog triggers it through
+ * {@link #removeNotify()} on dispose, and tests must call it before their temp folder is cleaned up -
+ * Windows refuses to delete a directory while either handle is open.
  */
-public class ErrorMessagePanel extends JPanel {
+public class ErrorMessagePanel extends JPanel implements Closeable {
 
     private static final long serialVersionUID = 8449689452512733452L;
 
@@ -54,6 +60,11 @@ public class ErrorMessagePanel extends JPanel {
 
     // logReaders is the list of each log file's reader
     private final List<RandomAccessFile> logReaders = Lists.newArrayList();
+
+    // SwingWorker may still deliver already-published events to the EDT after cancel(); this
+    // stops those late callbacks from reopening a reader or indexing into the cleared list.
+    // Guarded by this panel's monitor, see close().
+    private boolean closed;
 
     /**
      * @param exception     the exception to display
@@ -182,6 +193,47 @@ public class ErrorMessagePanel extends JPanel {
         });
     }
 
+    // synchronized with addNewTab/updateLog: the dialog closes on the EDT, where callbacks already
+    // run, but a test closes from its own thread while a queued callback may be mid-flight.
+    @Override
+    public synchronized void close() throws IOException {
+        closed = true;
+        IOException first = null;
+        try {
+            logUpdateWorker.close();
+        } catch (IOException e) {
+            first = e;
+        }
+        for (RandomAccessFile logReader : logReaders) {
+            try {
+                logReader.close();
+            } catch (IOException e) {
+                if (first == null) {
+                    first = e;
+                }
+            }
+        }
+        logReaders.clear();
+        if (first != null) {
+            throw first;
+        }
+    }
+
+    /**
+     * Swing calls this when the panel leaves a displayable hierarchy - for this dialog, that is
+     * dispose. Card-layout page switches do not remove the panel, so tailing keeps working while
+     * the user moves between pages.
+     */
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        try {
+            close();
+        } catch (IOException e) {
+            e.printStackTrace(System.err);
+        }
+    }
+
     @Override
     public void setVisible(boolean aFlag) {
         super.setVisible(aFlag);
@@ -296,7 +348,10 @@ public class ErrorMessagePanel extends JPanel {
      * @param logFileFolder log folder
      * @param newLogPath    path of the new log file
      */
-    private void addNewTab(Path logFileFolder, Path newLogPath) {
+    private synchronized void addNewTab(Path logFileFolder, Path newLogPath) {
+        if (closed) {
+            return;
+        }
         logFiles.add(newLogPath);
         sortLogFiles(logFiles);
         int index = logFiles.indexOf(newLogPath);
@@ -323,7 +378,10 @@ public class ErrorMessagePanel extends JPanel {
      * Update log information
      * @param changedLogPath path of the changed log file
      */
-    private void updateLog(Path changedLogPath) {
+    private synchronized void updateLog(Path changedLogPath) {
+        if (closed) {
+            return;
+        }
         int index = logFiles.indexOf(changedLogPath);
         if (index != -1) {
             RandomAccessFile logReader = logReaders.get(index);
