@@ -4,6 +4,10 @@
 # To regenerate this file, run: ./gradlew :cr-core:dependencies --write-locks
 ch.qos.logback:logback-classic:1.6.0=testRuntimeClasspath
 ch.qos.logback:logback-core:1.6.0=testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-annotations:2.22=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-core:2.22.2=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-databind:2.22.2=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson:jackson-bom:2.22.2=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.github.oowekyala.ooxml:nice-xml-messages:3.1=pmd
 com.google.code.findbugs:jsr305:3.0.2=checkstyle,compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.google.code.gson:gson:2.8.9=pmd
