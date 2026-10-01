@@ -74,23 +74,38 @@ public final class GitHubIssueLinkBuilder {
      * URL-encodes {@code value}, truncating with {@link #TRUNCATED_SUFFIX} to fit {@code maxBytes}.
      * Null if even the suffix doesn't fit. Truncates the raw text first, then encodes - never
      * splits mid-escape.
+     * <p>
+     * Binary search on the cut point: the encoded length grows monotonically with the prefix
+     * length, so about {@code log2(n)} full encodes find the longest prefix that fits. The obvious
+     * loop (drop one char, re-encode everything) is quadratic, and it runs on the Swing thread
+     * when the user clicks the button - a 30k-character crash body froze the dialog for seconds.
      */
-    private static String fitToBudget(String value, int maxBytes) {
+    static String fitToBudget(String value, int maxBytes) {
         String encoded = encode(value);
         if (encoded.length() <= maxBytes) {
             return encoded;
         }
         String suffix = encode(TRUNCATED_SUFFIX);
-        if (suffix.length() > maxBytes) {
+        int budgetForText = maxBytes - suffix.length();
+        if (budgetForText <= 0) {
             return null;
         }
-        String truncated = value;
-        String withSuffix;
-        do {
-            truncated = truncated.substring(0, truncated.length() - 1);
-            withSuffix = encode(truncated) + suffix;
-        } while (!truncated.isEmpty() && withSuffix.length() > maxBytes);
-        return truncated.isEmpty() ? null : withSuffix;
+        int low = 0;
+        int high = value.length();
+        while (low < high) {
+            int mid = (low + high + 1) >>> 1;
+            if (encode(value.substring(0, mid)).length() <= budgetForText) {
+                low = mid;
+            } else {
+                high = mid - 1;
+            }
+        }
+        // Never cut between a surrogate pair: URLEncoder would turn the lone high surrogate into
+        // "%3F" ('?'), which is not a split escape but is a mangled trailing character.
+        if (low > 0 && Character.isHighSurrogate(value.charAt(low - 1))) {
+            low--;
+        }
+        return low == 0 ? null : encode(value.substring(0, low)) + suffix;
     }
 
     private static String encode(String value) {

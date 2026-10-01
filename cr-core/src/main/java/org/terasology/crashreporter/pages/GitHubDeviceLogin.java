@@ -4,6 +4,7 @@
 package org.terasology.crashreporter.pages;
 
 import org.apache.http.NameValuePair;
+import org.apache.http.StatusLine;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -39,8 +40,27 @@ public final class GitHubDeviceLogin {
         Map<String, String> fields = post(client, DEVICE_CODE_URL,
                 param("client_id", clientId), param("scope", SCOPE));
         failOnError(fields);
-        return new DeviceCode(fields.get("device_code"), fields.get("user_code"), fields.get("verification_uri"),
-                Integer.parseInt(fields.get("expires_in")), Integer.parseInt(fields.get("interval")));
+        return new DeviceCode(required(fields, "device_code"), required(fields, "user_code"),
+                required(fields, "verification_uri"), requiredInt(fields, "expires_in"), requiredInt(fields, "interval"));
+    }
+
+    // A rate-limited or erroring endpoint answers with HTML or JSON, not the form fields this
+    // expects. Reporting that as an IOException keeps it on the path the dialog shows to the user;
+    // a NullPointerException or NumberFormatException here used to kill the login thread silently.
+    private static String required(Map<String, String> fields, String name) throws IOException {
+        String value = fields.get(name);
+        if (value == null || value.isEmpty()) {
+            throw new IOException("GitHub's response is missing '" + name + "': " + fields);
+        }
+        return value;
+    }
+
+    private static int requiredInt(Map<String, String> fields, String name) throws IOException {
+        try {
+            return Integer.parseInt(required(fields, name));
+        } catch (NumberFormatException e) {
+            throw new IOException("GitHub's response has a non-numeric '" + name + "': " + fields.get(name), e);
+        }
     }
 
     /** Blocks until authorized, denied, or expired. Call off the UI thread. */
@@ -88,6 +108,12 @@ public final class GitHubDeviceLogin {
         post.setEntity(new UrlEncodedFormEntity(paramList, StandardCharsets.UTF_8));
         try (CloseableHttpResponse response = client.execute(post)) {
             String body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+            // The OAuth endpoints report expected conditions (authorization_pending, access_denied)
+            // in the form body with a 200, so only a genuinely failed request is rejected here.
+            StatusLine status = response.getStatusLine();
+            if (status != null && status.getStatusCode() / 100 != 2) {
+                throw new IOException("GitHub login endpoint returned HTTP " + status.getStatusCode() + ": " + body);
+            }
             return parseFormBody(body);
         }
     }

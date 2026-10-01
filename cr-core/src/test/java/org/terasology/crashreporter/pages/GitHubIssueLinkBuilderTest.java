@@ -107,6 +107,37 @@ class GitHubIssueLinkBuilderTest {
     }
 
     @Test
+    void fitToBudgetKeepsTheLongestPrefixThatFits() {
+        // 10 'x' encode to 10 bytes; the suffix is fixed. The result must land exactly on the budget,
+        // not one short of it - the old drop-one-char loop and a binary search can disagree here.
+        String suffix = "%0A...+truncated%2C+see+the+full+log";
+        int budget = 10 + suffix.length();
+
+        String fitted = GitHubIssueLinkBuilder.fitToBudget("x".repeat(100), budget);
+
+        assertEquals("xxxxxxxxxx" + suffix, fitted);
+        assertEquals(budget, fitted.length());
+    }
+
+    @Test
+    void fitToBudgetReturnsNullWhenNotEvenTheSuffixFits() {
+        assertNull(GitHubIssueLinkBuilder.fitToBudget("x".repeat(100), 5));
+    }
+
+    @Test
+    void truncationNeverSplitsASurrogatePair() {
+        // U+1F600 is one code point but two Java chars; cutting between them yields a lone high
+        // surrogate, which URLEncoder renders as "%3F" ('?') - a mangled trailing character.
+        String emoji = new String(Character.toChars(0x1F600));
+        String value = emoji.repeat(2_000);
+
+        String fitted = GitHubIssueLinkBuilder.fitToBudget(value, 1_000);
+
+        assertFalse(fitted.contains("%3F"), "lone surrogate leaked as '?': " + fitted);
+        assertTrue(fitted.length() <= 1_000, "over budget: " + fitted.length());
+    }
+
+    @Test
     void truncationNeverSplitsAPercentEscape() {
         Map<String, String> fields = new LinkedHashMap<>();
         // Every char is a 3-byte "%XX" escape, so a mid-escape cut would hide here.

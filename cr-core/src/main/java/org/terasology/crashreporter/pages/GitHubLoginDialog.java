@@ -19,10 +19,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.Desktop;
 import java.awt.Window;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URL;
 
 /**
@@ -46,6 +44,7 @@ public class GitHubLoginDialog extends JDialog {
     private final String repo;
 
     private volatile String accessToken;
+    private volatile Thread loginThread;
 
     public GitHubLoginDialog(Window ownerWindow, String clientId, String owner, String repo,
                               String title, String body) {
@@ -122,16 +121,36 @@ public class GitHubLoginDialog extends JDialog {
                 SwingUtilities.invokeLater(() -> showCode(code));
                 accessToken = GitHubDeviceLogin.pollForAccessToken(client, clientId, code);
                 SwingUtilities.invokeLater(() -> cards.show(content, "review"));
-            } catch (IOException | InterruptedException e) {
+            } catch (InterruptedException e) {
+                // Cancel: dispose() interrupted us. Nothing to show, the dialog is gone.
+                Thread.currentThread().interrupt();
+            } catch (IOException | RuntimeException e) {
+                // RuntimeException too: a rate-limited or erroring endpoint used to surface as an
+                // uncaught exception that killed this thread and left the dialog on "Requesting...".
                 SwingUtilities.invokeLater(() -> showFailure(e));
             }
         }, "GitHubDeviceLogin");
         thread.setDaemon(true);
+        loginThread = thread;
         thread.start();
     }
 
+    /**
+     * Cancel stops the device-flow poll. Without this the daemon thread kept asking GitHub for a
+     * token until the code expired (typically fifteen minutes), and a user who finished the browser
+     * step after cancelling minted a live token into a dialog nobody could see.
+     */
+    @Override
+    public void dispose() {
+        Thread thread = loginThread;
+        if (thread != null) {
+            thread.interrupt();
+        }
+        super.dispose();
+    }
+
     private void showCode(GitHubDeviceLogin.DeviceCode code) {
-        openInBrowser(code.getVerificationUri());
+        BrowserLauncher.open(code.getVerificationUri());
         waitingLabel.setText("<html><center>" + I18N.getMessage("githubLoginWaiting",
                 code.getVerificationUri(), code.getUserCode()) + "</center></html>");
     }
@@ -145,7 +164,7 @@ public class GitHubLoginDialog extends JDialog {
             try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
                 URL issueUrl = GitHubIssueApiClient.createIssue(client, accessToken, owner, repo, title, body);
                 SwingUtilities.invokeLater(() -> showSuccess(issueUrl));
-            } catch (IOException e) {
+            } catch (IOException | RuntimeException e) {
                 SwingUtilities.invokeLater(() -> showFailure(e));
             }
         }, "GitHubIssueSubmit");
@@ -156,21 +175,12 @@ public class GitHubLoginDialog extends JDialog {
     private void showSuccess(URL issueUrl) {
         resultLabel.setText("<html>" + I18N.getMessage("githubLoginSuccess", issueUrl) + "</html>");
         cards.show(content, "result");
-        openInBrowser(issueUrl.toString());
+        BrowserLauncher.open(issueUrl.toString());
     }
 
     private void showFailure(Exception e) {
+        e.printStackTrace(System.err);
         resultLabel.setText("<html>" + I18N.getMessage("githubLoginFailed", e.getLocalizedMessage()) + "</html>");
         cards.show(content, "result");
-    }
-
-    private static void openInBrowser(String url) {
-        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-            try {
-                Desktop.getDesktop().browse(new URI(url));
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
-            }
-        }
     }
 }
