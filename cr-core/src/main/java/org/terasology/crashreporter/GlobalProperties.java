@@ -18,6 +18,28 @@ public final class GlobalProperties {
         SUPPORT_FORUM_LINK,
         JOIN_DISCORD_LINK,
         REPORT_ISSUE_LINK,
+        REPORT_ISSUE_TEMPLATE,
+        // GitHub OAuth App client ID with Device Flow enabled. Unset by default - see
+        // GitHubDeviceLogin's javadoc. When unset, the "submit directly" button is hidden.
+        REPORT_ISSUE_OAUTH_CLIENT_ID,
+        // Field IDs of the issue form named by REPORT_ISSUE_TEMPLATE, one per thing CrashSummary
+        // can pre-fill. Unset means that field is left for the user. Form-specific, so these live
+        // with the template in the downstream app's properties, never in cr-core's defaults.
+        REPORT_ISSUE_FIELD_VERSION,
+        REPORT_ISSUE_FIELD_OS,
+        REPORT_ISSUE_FIELD_JAVA,
+        REPORT_ISSUE_FIELD_DETAILS,
+        REPORT_ISSUE_FIELD_LOG,
+        REPORT_ISSUE_FIELD_EXTRA,
+
+        // What CrashSummary knows about the hosting application's logs. The regexes each capture
+        // one group from the combined log text; unset means that line is not extracted or shown.
+        // Log formats are app-specific and not a published API, which is why they are configured
+        // by the app (cr-terasology, cr-destsol) rather than hardcoded in cr-core.
+        CRASH_SUMMARY_PRODUCT_NAME,
+        CRASH_SUMMARY_VERSION_PATTERN,
+        CRASH_SUMMARY_DISPLAY_VERSION_PATTERN,
+        CRASH_SUMMARY_MODULE_PATTERN,
 
         RES_BANNER_IMAGE,
         RES_SERVER_ICON,
