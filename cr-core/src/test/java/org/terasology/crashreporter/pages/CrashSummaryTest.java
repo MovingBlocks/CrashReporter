@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.EnumMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,9 +30,68 @@ class CrashSummaryTest {
                     + "10:00:01.010 [main] INFO  o.t.e.core.modes.loadProcesses.RegisterMods - Activating module: CoreAssets:2.4.0\n"
                     + "10:00:01.020 [main] INFO  o.t.e.core.modes.loadProcesses.RegisterMods - Activating module: CoreAssets:2.4.0\n";
 
+    /**
+     * The same patterns and field IDs cr-terasology's crashreporter.properties declares - kept in
+     * step by hand, since cr-core's tests cannot see that module's resources.
+     */
+    private static CrashSummary.Profile terasology() {
+        Map<CrashSummary.Profile.FormField, String> fields = new EnumMap<>(CrashSummary.Profile.FormField.class);
+        fields.put(CrashSummary.Profile.FormField.VERSION, "terasology_version");
+        fields.put(CrashSummary.Profile.FormField.OS, "operating_system");
+        fields.put(CrashSummary.Profile.FormField.JAVA, "java_version");
+        fields.put(CrashSummary.Profile.FormField.DETAILS, "actual_behavior");
+        fields.put(CrashSummary.Profile.FormField.LOG, "log_details");
+        fields.put(CrashSummary.Profile.FormField.EXTRA, "additional_context");
+        return new CrashSummary.Profile("Terasology", "engineVersion=([^,\\]]*)", "displayVersion=([^,\\]]*)",
+                "Activating module: (\\S+:\\S+)", fields);
+    }
+
+    @Test
+    void genericProfileMentionsNoProductAndPreFillsNoFormFields() {
+        // cr-core alone, or an app like cr-destsol with no log patterns configured: the body must
+        // not claim "Terasology version: unknown" or "Active modules: none found in logs".
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
+        String body = summary.buildBody(null);
+
+        assertFalse(body.contains("Terasology"), "Expected no product name under the generic profile, got: " + body);
+        assertFalse(body.contains("version:"), "Expected no version line without a version pattern, got: " + body);
+        assertFalse(body.contains("Active modules"), "Expected no module list without a module pattern, got: " + body);
+        assertTrue(body.contains("- OS: ") && body.contains("- Java: "), "Expected OS and Java lines, got: " + body);
+        assertTrue(summary.buildIssueFormFields(null).isEmpty(), "Expected no form fields without configured IDs");
+    }
+
+    @Test
+    void profileFromCoreDefaultsIsGeneric() {
+        // cr-core's own crashreporter_defaults.properties declares none of the CRASH_SUMMARY_* or
+        // REPORT_ISSUE_FIELD_* keys, so a standalone cr-core gets exactly the generic behaviour.
+        CrashSummary.Profile profile = CrashSummary.Profile.from(new org.terasology.crashreporter.GlobalProperties());
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT, profile);
+
+        assertFalse(summary.buildBody(null).contains("version:"));
+        assertTrue(summary.buildIssueFormFields(null).isEmpty());
+    }
+
+    @Test
+    void productNameLabelsTheVersionLine() {
+        CrashSummary.Profile destSol = new CrashSummary.Profile("Destination Sol", "version=(\\S+)", null, null,
+                new EnumMap<>(CrashSummary.Profile.FormField.class));
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), "startup version=2.1.0 ok", destSol);
+
+        assertTrue(summary.buildBody(null).contains("- Destination Sol version: 2.1.0"), summary.buildBody(null));
+    }
+
+    @Test
+    void anInvalidConfiguredRegexDegradesToNotExtractedInsteadOfThrowing() {
+        CrashSummary.Profile broken = new CrashSummary.Profile("X", "version=(unclosed", null, null,
+                new EnumMap<>(CrashSummary.Profile.FormField.class));
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT, broken);
+
+        assertFalse(summary.buildBody(null).contains("version:"));
+    }
+
     @Test
     void extractsEngineAndDisplayVersion() {
-        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT, terasology());
         String body = summary.buildBody(null);
 
         assertTrue(body.contains("5.4.0-SNAPSHOT"), "Expected the engine version in the body, got: " + body);
@@ -40,7 +100,7 @@ class CrashSummaryTest {
 
     @Test
     void extractsActiveModulesAndDeduplicates() {
-        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT, terasology());
         String body = summary.buildBody(null);
 
         assertTrue(body.contains("engine:5.4.0-SNAPSHOT"), "Expected engine module, got: " + body);
@@ -51,7 +111,7 @@ class CrashSummaryTest {
 
     @Test
     void missingVersionAndModulesDegradeGracefullyInsteadOfFailing() {
-        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), "no relevant lines here");
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), "no relevant lines here", terasology());
         String body = summary.buildBody(null);
 
         assertTrue(body.contains("unknown"), "Expected a fallback for a missing version, got: " + body);
@@ -60,14 +120,14 @@ class CrashSummaryTest {
 
     @Test
     void titleUsesExceptionClassAndMessage() {
-        CrashSummary summary = CrashSummary.extract(new IllegalStateException("world was null"), LOG_TEXT);
+        CrashSummary summary = CrashSummary.extract(new IllegalStateException("world was null"), LOG_TEXT, terasology());
 
         assertEquals("Crash: IllegalStateException: world was null", summary.buildTitle());
     }
 
     @Test
     void bodyIncludesTheExceptionExtract() {
-        CrashSummary summary = CrashSummary.extract(new RuntimeException("kaboom"), LOG_TEXT);
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("kaboom"), LOG_TEXT, terasology());
         String body = summary.buildBody(null);
 
         assertTrue(body.contains("kaboom"), "Expected the exception message in the body, got: " + body);
@@ -76,7 +136,7 @@ class CrashSummaryTest {
 
     @Test
     void bodyIncludesThePastebinLinkWhenUploaded() throws MalformedURLException {
-        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT, terasology());
         URL link = new URL("https://pastebin.com/abc123");
 
         String body = summary.buildBody(link);
@@ -86,7 +146,7 @@ class CrashSummaryTest {
 
     @Test
     void bodyNotesWhenUploadWasSkipped() {
-        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT, terasology());
 
         String body = summary.buildBody(null);
 
@@ -109,7 +169,7 @@ class CrashSummaryTest {
                 + "java.lang.NullPointerException: world was null\n"
                 + "\tat org.terasology.engine.core.TerasologyEngine.run(TerasologyEngine.java:200)\n";
 
-        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), combinedLog);
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), combinedLog, terasology());
         String body = summary.buildBody(null);
 
         assertTrue(body.contains("### Exceptions"), "Expected a single unified exceptions section, got: " + body);
@@ -136,7 +196,7 @@ class CrashSummaryTest {
                 + primary + "\n"
                 + "\tat org.terasology.engine.core.TerasologyEngine.run(TerasologyEngine.java:200)\n";
 
-        CrashSummary summary = CrashSummary.extract(primary, combinedLog);
+        CrashSummary summary = CrashSummary.extract(primary, combinedLog, terasology());
         String body = summary.buildBody(null);
 
         assertTrue(body.contains("**Terasology-game.log**\n\n```\njava.lang.RuntimeException: boom\n"
@@ -157,7 +217,7 @@ class CrashSummaryTest {
         combinedLog.append("java.lang.NullPointerException: world was null\n")
                 .append("\tat org.terasology.engine.core.TerasologyEngine.run(TerasologyEngine.java:200)\n");
 
-        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), combinedLog.toString());
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), combinedLog.toString(), terasology());
         String body = summary.buildBody(null);
 
         assertFalse(body.contains("log line 1\n") || body.contains("log line 2\n") || body.contains("log line 3\n"),
@@ -179,7 +239,7 @@ class CrashSummaryTest {
                 + "\tat java.base/java.io.FileOutputStream.write(FileOutputStream.java:100)\n"
                 + "\t... 3 common frames omitted\n";
 
-        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), combinedLog);
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), combinedLog, terasology());
         String body = summary.buildBody(null);
 
         assertTrue(body.contains("Caused by: java.io.IOException: disk full"),
@@ -204,7 +264,7 @@ class CrashSummaryTest {
     // REPORT_ISSUE_TEMPLATE, landing the summary in that issue form's own fields.
     @Test
     void issueFormFieldsIncludeVersionOsAndTheExceptionBlocks() {
-        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT, terasology());
         Map<String, String> fields = summary.buildIssueFormFields(null);
 
         assertEquals("5.4.0-SNAPSHOT (Aeternum)", fields.get("terasology_version"));
@@ -215,7 +275,7 @@ class CrashSummaryTest {
 
     @Test
     void issueFormFieldsOmitVersionWhenNotFoundInsteadOfSayingUnknown() {
-        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), "no relevant lines here");
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), "no relevant lines here", terasology());
         Map<String, String> fields = summary.buildIssueFormFields(null);
 
         // Unlike buildBody()'s "unknown" fallback, an omitted field is left blank in the actual issue
@@ -226,7 +286,7 @@ class CrashSummaryTest {
 
     @Test
     void issueFormFieldsOmitLogDetailsWhenUploadWasSkipped() {
-        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT, terasology());
         Map<String, String> fields = summary.buildIssueFormFields(null);
 
         assertNull(fields.get("log_details"), "Expected no log_details entry when nothing was uploaded, got: " + fields);
@@ -234,7 +294,7 @@ class CrashSummaryTest {
 
     @Test
     void issueFormFieldsIncludeThePastebinLinkWhenUploaded() throws MalformedURLException {
-        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT, terasology());
         URL link = new URL("https://pastebin.com/abc123");
 
         Map<String, String> fields = summary.buildIssueFormFields(link);
@@ -244,7 +304,7 @@ class CrashSummaryTest {
 
     @Test
     void issueFormFieldsIncludeActiveModulesUnderAdditionalContext() {
-        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT);
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT, terasology());
         Map<String, String> fields = summary.buildIssueFormFields(null);
 
         assertTrue(fields.get("additional_context").contains("engine:5.4.0-SNAPSHOT"), fields.get("additional_context"));

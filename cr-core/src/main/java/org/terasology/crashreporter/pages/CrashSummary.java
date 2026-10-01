@@ -3,15 +3,21 @@
 
 package org.terasology.crashreporter.pages;
 
+import org.terasology.crashreporter.GlobalProperties;
+import org.terasology.crashreporter.GlobalProperties.KEY;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Builds a pre-filled GitHub issue title/body from a crash: the exception itself, plus every other
@@ -27,12 +33,13 @@ import java.util.regex.Pattern;
  * the real one and is used instead; the reconstructed exception's own trace is only a fallback for
  * when nothing better is available.
  * <p>
- * The version/module regexes here mirror two fixed, narrow log lines the engine emits at startup -
- * see {@code TerasologyEngine#logEnvironmentInfo} ({@code TerasologyVersion#toString}'s
- * {@code [buildNumber=..., ..., engineVersion=X, displayVersion=Y]} format) and
- * {@code RegisterMods} ({@code "Activating module: <id>:<version>"}, once per active module).
- * Log formatting is not a published API and can drift; a change there degrades this to a blank
- * "unknown"/empty-list extract rather than failing the report itself.
+ * What counts as a version line or a module line is the hosting application's business: cr-core
+ * is shared by Terasology and Destination Sol, whose logs look nothing alike. A {@link Profile},
+ * built from the app's {@code crashreporter.properties}, carries those regexes plus the product
+ * name and the issue-form field IDs; with no profile configured the summary degrades to the parts
+ * every JVM app has (exceptions, OS, Java) rather than mislabelling another game's crash as a
+ * Terasology one. Log formatting is not a published API and can drift; a pattern that stops
+ * matching degrades to "unknown"/an empty list rather than failing the report itself.
  */
 public final class CrashSummary {
 
@@ -43,9 +50,6 @@ public final class CrashSummary {
     private static final int CONTEXT_LINES_BEFORE = 5;
     private static final String NO_TAB_LABEL = "this crash";
 
-    private static final Pattern ENGINE_VERSION_PATTERN = Pattern.compile("engineVersion=([^,\\]]*)");
-    private static final Pattern DISPLAY_VERSION_PATTERN = Pattern.compile("displayVersion=([^,\\]]*)");
-    private static final Pattern ACTIVE_MODULE_PATTERN = Pattern.compile("Activating module: (\\S+:\\S+)");
     private static final Pattern LOG_TAB_PATTERN = Pattern.compile("(?m)^=== (.*) ===$");
     // A log-formatted stack trace: a "some.FullyQualified.NameException[: message]" header line
     // immediately followed by one or more "at ..."/"Caused by: ..." frame lines - the shape every
@@ -57,6 +61,7 @@ public final class CrashSummary {
             "(?m)^([\\w$]+(?:\\.[\\w$]+)+(?:Exception|Error))(:[^\\n]*)?\\n"
                     + "((?:[ \\t]*(?:at |Caused by:|\\.\\.\\. \\d+ (?:more|common frames omitted))[^\\n]*\\n?)+)");
 
+    private final Profile profile;
     private final Throwable exception;
     private final List<String> exceptionBlocks;
     private final int moreExceptionsCount;
@@ -64,8 +69,9 @@ public final class CrashSummary {
     private final String displayVersion;
     private final List<String> activeModules;
 
-    private CrashSummary(Throwable exception, List<String> exceptionBlocks, int moreExceptionsCount,
+    private CrashSummary(Profile profile, Throwable exception, List<String> exceptionBlocks, int moreExceptionsCount,
                           String engineVersion, String displayVersion, List<String> activeModules) {
+        this.profile = profile;
         this.exception = exception;
         this.exceptionBlocks = exceptionBlocks;
         this.moreExceptionsCount = moreExceptionsCount;
@@ -74,7 +80,12 @@ public final class CrashSummary {
         this.activeModules = activeModules;
     }
 
+    /** Extracts with {@link Profile#GENERIC}: exceptions, OS and Java only. */
     public static CrashSummary extract(Throwable exception, String combinedLogText) {
+        return extract(exception, combinedLogText, Profile.GENERIC);
+    }
+
+    public static CrashSummary extract(Throwable exception, String combinedLogText, Profile profile) {
         String text = combinedLogText != null ? combinedLogText : "";
 
         List<String> blocks = buildExceptionBlocks(exception, text);
@@ -84,9 +95,9 @@ public final class CrashSummary {
             blocks = new ArrayList<>(blocks.subList(0, MAX_EXCEPTIONS_LISTED));
         }
 
-        return new CrashSummary(exception, blocks, moreCount,
-                firstGroup(ENGINE_VERSION_PATTERN, text), firstGroup(DISPLAY_VERSION_PATTERN, text),
-                extractActiveModules(text));
+        return new CrashSummary(profile, exception, blocks, moreCount,
+                firstGroup(profile.versionPattern, text), firstGroup(profile.displayVersionPattern, text),
+                extractActiveModules(profile.modulePattern, text));
     }
 
     /**
@@ -256,13 +267,19 @@ public final class CrashSummary {
     }
 
     private static String firstGroup(Pattern pattern, String text) {
+        if (pattern == null) {
+            return "";
+        }
         Matcher matcher = pattern.matcher(text);
         return matcher.find() ? matcher.group(1).trim() : "";
     }
 
-    private static List<String> extractActiveModules(String text) {
+    private static List<String> extractActiveModules(Pattern pattern, String text) {
         List<String> modules = new ArrayList<>();
-        Matcher matcher = ACTIVE_MODULE_PATTERN.matcher(text);
+        if (pattern == null) {
+            return modules;
+        }
+        Matcher matcher = pattern.matcher(text);
         while (matcher.find()) {
             String module = matcher.group(1);
             if (!modules.contains(module)) {
@@ -305,24 +322,29 @@ public final class CrashSummary {
         }
 
         body.append("### Environment\n\n");
-        body.append("- Terasology version: ").append(engineVersion.isEmpty() ? "unknown" : engineVersion);
-        if (!displayVersion.isEmpty()) {
-            body.append(" (").append(displayVersion).append(')');
+        if (profile.extractsVersion()) {
+            body.append("- ").append(profile.versionLabel()).append(": ").append(engineVersion.isEmpty() ? "unknown" : engineVersion);
+            if (!displayVersion.isEmpty()) {
+                body.append(" (").append(displayVersion).append(')');
+            }
+            body.append('\n');
         }
-        body.append('\n');
         body.append("- OS: ").append(System.getProperty("os.name")).append(' ')
                 .append(System.getProperty("os.version")).append(" (").append(System.getProperty("os.arch")).append(")\n");
-        body.append("- Active modules:");
-        if (activeModules.isEmpty()) {
-            body.append(" none found in logs\n");
-        } else {
-            body.append('\n');
-            int shown = Math.min(activeModules.size(), MAX_MODULES_LISTED);
-            for (int i = 0; i < shown; i++) {
-                body.append("  - ").append(activeModules.get(i)).append('\n');
-            }
-            if (activeModules.size() > shown) {
-                body.append("  - ... ").append(activeModules.size() - shown).append(" more\n");
+        body.append("- Java: ").append(System.getProperty("java.version")).append('\n');
+        if (profile.extractsModules()) {
+            body.append("- Active modules:");
+            if (activeModules.isEmpty()) {
+                body.append(" none found in logs\n");
+            } else {
+                body.append('\n');
+                int shown = Math.min(activeModules.size(), MAX_MODULES_LISTED);
+                for (int i = 0; i < shown; i++) {
+                    body.append("  - ").append(activeModules.get(i)).append('\n');
+                }
+                if (activeModules.size() > shown) {
+                    body.append("  - ... ").append(activeModules.size() - shown).append(" more\n");
+                }
             }
         }
 
@@ -337,9 +359,9 @@ public final class CrashSummary {
      * @return field ID to value for the issue form named by
      *         {@link org.terasology.crashreporter.GlobalProperties.KEY#REPORT_ISSUE_TEMPLATE} - only
      *         meaningful when a downstream app has configured one (see
-     *         {@link GitHubIssueLinkBuilder#build(String, String, String, Map)}); the IDs here match
-     *         Terasology's own {@code crash-bug-report.yml}. Fields with nothing extractable are
-     *         omitted so the user's own blank field is left for them to fill in, rather than being
+     *         {@link GitHubIssueLinkBuilder#build(String, String, String, Map)}). The IDs come from
+     *         the {@link Profile}; a part with no configured ID, or nothing extractable, is omitted
+     *         so the user's own blank field is left for them to fill in, rather than being
      *         pre-filled with something misleading like "unknown".
      */
     public Map<String, String> buildIssueFormFields(URL pastebinLink) {
@@ -347,11 +369,11 @@ public final class CrashSummary {
 
         if (!engineVersion.isEmpty()) {
             String version = displayVersion.isEmpty() ? engineVersion : engineVersion + " (" + displayVersion + ")";
-            fields.put("terasology_version", version);
+            putField(fields, Profile.FormField.VERSION, version);
         }
-        fields.put("operating_system", System.getProperty("os.name") + " " + System.getProperty("os.version")
+        putField(fields, Profile.FormField.OS, System.getProperty("os.name") + " " + System.getProperty("os.version")
                 + " (" + System.getProperty("os.arch") + ")");
-        fields.put("java_version", System.getProperty("java.version"));
+        putField(fields, Profile.FormField.JAVA, System.getProperty("java.version"));
 
         StringBuilder actual = new StringBuilder();
         for (String block : exceptionBlocks) {
@@ -360,10 +382,10 @@ public final class CrashSummary {
         if (moreExceptionsCount > 0) {
             actual.append("... ").append(moreExceptionsCount).append(" more - see the full log\n");
         }
-        fields.put("actual_behavior", actual.toString().trim());
+        putField(fields, Profile.FormField.DETAILS, actual.toString().trim());
 
         if (pastebinLink != null) {
-            fields.put("log_details", "[PasteBin](" + pastebinLink + ")");
+            putField(fields, Profile.FormField.LOG, "[PasteBin](" + pastebinLink + ")");
         }
 
         if (!activeModules.isEmpty()) {
@@ -375,9 +397,100 @@ public final class CrashSummary {
             if (activeModules.size() > shown) {
                 modules.append("- ... ").append(activeModules.size() - shown).append(" more\n");
             }
-            fields.put("additional_context", modules.toString().trim());
+            putField(fields, Profile.FormField.EXTRA, modules.toString().trim());
         }
 
         return fields;
+    }
+
+    private void putField(Map<String, String> fields, Profile.FormField field, String value) {
+        String id = profile.fieldId(field);
+        if (id != null) {
+            fields.put(id, value);
+        }
+    }
+
+    /**
+     * What the hosting application tells CrashSummary about its logs and its issue form. Built
+     * from {@link GlobalProperties} by {@link #from}; cr-core's own defaults configure none of it.
+     */
+    public static final class Profile {
+
+        /** Which of the summary's parts a configured issue-form field ID receives. */
+        public enum FormField { VERSION, OS, JAVA, DETAILS, LOG, EXTRA }
+
+        /** No product name, no log patterns, no form fields: exceptions, OS and Java only. */
+        public static final Profile GENERIC = new Profile(null, null, null, null, Collections.<FormField, String>emptyMap());
+
+        private final String productName;
+        private final Pattern versionPattern;
+        private final Pattern displayVersionPattern;
+        private final Pattern modulePattern;
+        private final Map<FormField, String> formFieldIds;
+
+        /**
+         * @param productName shown as "{productName} version" in the body; null for a plain "Version"
+         * @param versionRegex regex whose group 1 is the version, or null to extract none
+         * @param displayVersionRegex regex whose group 1 is a display name for the version, or null
+         * @param moduleRegex regex whose group 1 is one active module, matched repeatedly, or null
+         * @param formFieldIds issue-form field ID per part; parts without an ID are not pre-filled
+         */
+        public Profile(String productName, String versionRegex, String displayVersionRegex, String moduleRegex,
+                       Map<FormField, String> formFieldIds) {
+            this.productName = productName;
+            this.versionPattern = compileOrNull(versionRegex, KEY.CRASH_SUMMARY_VERSION_PATTERN);
+            this.displayVersionPattern = compileOrNull(displayVersionRegex, KEY.CRASH_SUMMARY_DISPLAY_VERSION_PATTERN);
+            this.modulePattern = compileOrNull(moduleRegex, KEY.CRASH_SUMMARY_MODULE_PATTERN);
+            this.formFieldIds = new EnumMap<>(FormField.class);
+            for (Map.Entry<FormField, String> entry : formFieldIds.entrySet()) {
+                if (entry.getValue() != null && !entry.getValue().isEmpty()) {
+                    this.formFieldIds.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+
+        public static Profile from(GlobalProperties properties) {
+            Map<FormField, String> fields = new EnumMap<>(FormField.class);
+            fields.put(FormField.VERSION, properties.get(KEY.REPORT_ISSUE_FIELD_VERSION));
+            fields.put(FormField.OS, properties.get(KEY.REPORT_ISSUE_FIELD_OS));
+            fields.put(FormField.JAVA, properties.get(KEY.REPORT_ISSUE_FIELD_JAVA));
+            fields.put(FormField.DETAILS, properties.get(KEY.REPORT_ISSUE_FIELD_DETAILS));
+            fields.put(FormField.LOG, properties.get(KEY.REPORT_ISSUE_FIELD_LOG));
+            fields.put(FormField.EXTRA, properties.get(KEY.REPORT_ISSUE_FIELD_EXTRA));
+            return new Profile(properties.get(KEY.CRASH_SUMMARY_PRODUCT_NAME),
+                    properties.get(KEY.CRASH_SUMMARY_VERSION_PATTERN),
+                    properties.get(KEY.CRASH_SUMMARY_DISPLAY_VERSION_PATTERN),
+                    properties.get(KEY.CRASH_SUMMARY_MODULE_PATTERN), fields);
+        }
+
+        // A typo in a downstream app's regex must not take the whole crash dialog down with it;
+        // it degrades to "not extracted", and says so once on stderr.
+        private static Pattern compileOrNull(String regex, KEY key) {
+            if (regex == null || regex.isEmpty()) {
+                return null;
+            }
+            try {
+                return Pattern.compile(regex);
+            } catch (PatternSyntaxException e) {
+                System.err.println("Ignoring invalid " + key + " regex: " + e.getMessage());
+                return null;
+            }
+        }
+
+        String versionLabel() {
+            return productName != null && !productName.isEmpty() ? productName + " version" : "Version";
+        }
+
+        boolean extractsVersion() {
+            return versionPattern != null;
+        }
+
+        boolean extractsModules() {
+            return modulePattern != null;
+        }
+
+        String fieldId(FormField field) {
+            return formFieldIds.get(field);
+        }
     }
 }

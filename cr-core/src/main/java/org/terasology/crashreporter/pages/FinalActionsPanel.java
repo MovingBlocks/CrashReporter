@@ -55,6 +55,7 @@ public class FinalActionsPanel extends JPanel {
         this.exception = exception;
         this.logTextSupplier = logTextSupplier;
         this.uploadedFile = uploadedFile;
+        final CrashSummary.Profile summaryProfile = CrashSummary.Profile.from(properties);
 
         setLayout(new BorderLayout(0, 10));
         setBorder(new EmptyBorder(0, 10, 10, 10));
@@ -94,7 +95,7 @@ public class FinalActionsPanel extends JPanel {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                CrashSummary summary = CrashSummary.extract(exception, logTextSupplier.get());
+                CrashSummary summary = CrashSummary.extract(exception, logTextSupplier.get(), summaryProfile);
                 String baseUrl = properties.get(KEY.REPORT_ISSUE_LINK);
                 String template = properties.get(KEY.REPORT_ISSUE_TEMPLATE);
                 String link;
@@ -122,7 +123,7 @@ public class FinalActionsPanel extends JPanel {
             submitDirectlyButton.setFont(buttonFont);
             submitDirectlyButton.setIcon(Resources.loadIcon(properties.get(KEY.RES_GITHUB_ICON)));
             submitDirectlyButton.addActionListener(e -> {
-                CrashSummary summary = CrashSummary.extract(exception, logTextSupplier.get());
+                CrashSummary summary = CrashSummary.extract(exception, logTextSupplier.get(), summaryProfile);
                 Window window = SwingUtilities.getWindowAncestor(this);
                 new GitHubLoginDialog(window, oauthClientId, ownerRepo[0], ownerRepo[1],
                         summary.buildTitle(), summary.buildBody(uploadedFile.get())).setVisible(true);
