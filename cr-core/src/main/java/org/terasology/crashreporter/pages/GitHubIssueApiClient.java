@@ -10,6 +10,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -25,7 +26,9 @@ import java.util.regex.Pattern;
  */
 public final class GitHubIssueApiClient {
 
-    private static final Pattern OWNER_REPO_PATTERN = Pattern.compile("github\\.com/([^/]+)/([^/]+)/");
+    // Trailing slash optional: "https://github.com/Owner/Repo" is a valid REPORT_ISSUE_LINK too,
+    // and requiring the slash silently hid the direct-submit button for it.
+    private static final Pattern OWNER_REPO_PATTERN = Pattern.compile("github\\.com/([^/?#]+)/([^/?#]+)");
 
     private GitHubIssueApiClient() {
     }
@@ -49,7 +52,13 @@ public final class GitHubIssueApiClient {
             if (response.getStatusLine().getStatusCode() != HttpStatus.SC_CREATED) {
                 throw new IOException("GitHub API error " + response.getStatusLine().getStatusCode() + ": " + responseBody);
             }
-            return new URL(new JSONObject(responseBody).getString("html_url"));
+            try {
+                return new URL(new JSONObject(responseBody).getString("html_url"));
+            } catch (JSONException e) {
+                // A 201 with an unexpected body is still a failed submission from the user's point
+                // of view; surface it on the IOException path the dialog already handles.
+                throw new IOException("GitHub API returned an unexpected response: " + responseBody, e);
+            }
         }
     }
 

@@ -168,6 +168,26 @@ class CrashSummaryTest {
     }
 
     @Test
+    void bodyKeepsTheRootCauseOfAChainedExceptionAfterAMoreFramesLine() {
+        // Logback and printStackTrace() both print "... N more" between a cause chain's links. A
+        // frame pattern that stops there drops every "Caused by:" after the first - the root cause.
+        String combinedLog = "=== Terasology-game.log ===\n"
+                + "java.lang.IllegalStateException: wrapper\n"
+                + "\tat org.terasology.engine.core.TerasologyEngine.run(TerasologyEngine.java:200)\n"
+                + "\t... 12 more\n"
+                + "Caused by: java.io.IOException: disk full\n"
+                + "\tat java.base/java.io.FileOutputStream.write(FileOutputStream.java:100)\n"
+                + "\t... 3 common frames omitted\n";
+
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), combinedLog);
+        String body = summary.buildBody(null);
+
+        assertTrue(body.contains("Caused by: java.io.IOException: disk full"),
+                "Expected the root cause after the '... N more' line, got: " + body);
+        assertTrue(body.contains("... 3 common frames omitted"), "Expected the trailing omitted-frames line, got: " + body);
+    }
+
+    @Test
     void bodyFallsBackToTheExceptionsOwnTraceWhenNotFoundInAnyTab() {
         RuntimeException primary = new RuntimeException("boom");
         CrashSummary summary = CrashSummary.extract(primary, LOG_TEXT);

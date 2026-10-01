@@ -33,6 +33,24 @@ class GitHubIssueApiClientTest {
     }
 
     @Test
+    void parseOwnerRepoAcceptsABareRepoLinkWithoutATrailingPath() {
+        assertArrayEquals(new String[] {"MovingBlocks", "Terasology"},
+                GitHubIssueApiClient.parseOwnerRepo("https://github.com/MovingBlocks/Terasology"));
+        assertArrayEquals(new String[] {"MovingBlocks", "Terasology"},
+                GitHubIssueApiClient.parseOwnerRepo("https://github.com/MovingBlocks/Terasology?template=x.yml"));
+    }
+
+    @Test
+    void createIssueReportsAMalformedSuccessBodyAsAnIOException() throws IOException {
+        CloseableHttpResponse resp = response(201, "<html>unexpected</html>");
+        CloseableHttpClient client = mock(CloseableHttpClient.class);
+        when(client.execute(any(HttpUriRequest.class))).thenReturn(resp);
+
+        assertThrows(IOException.class,
+                () -> GitHubIssueApiClient.createIssue(client, "token", "o", "r", "t", "b"));
+    }
+
+    @Test
     void parseOwnerRepoReturnsNullForNonGithubLink() {
         assertNull(GitHubIssueApiClient.parseOwnerRepo("https://example.com/issues/new"));
         assertNull(GitHubIssueApiClient.parseOwnerRepo(null));

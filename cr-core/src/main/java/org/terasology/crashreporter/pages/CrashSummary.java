@@ -50,9 +50,12 @@ public final class CrashSummary {
     // A log-formatted stack trace: a "some.FullyQualified.NameException[: message]" header line
     // immediately followed by one or more "at ..."/"Caused by: ..." frame lines - the shape every
     // JVM logging framework prints a Throwable in (Logback's %ex, java.util.logging, a raw
-    // printStackTrace()), regardless of which class emits it.
+    // printStackTrace()), regardless of which class emits it. "... N more" / "... N common frames
+    // omitted" lines count as frames too: they sit between a cause chain's links, and a pattern that
+    // stopped at them dropped every "Caused by:" after the first - which is the root cause.
     private static final Pattern STACK_TRACE_HEADER_PATTERN = Pattern.compile(
-            "(?m)^([\\w$]+(?:\\.[\\w$]+)+(?:Exception|Error))(:[^\\n]*)?\\n((?:[ \\t]*(?:at |Caused by:)[^\\n]*\\n?)+)");
+            "(?m)^([\\w$]+(?:\\.[\\w$]+)+(?:Exception|Error))(:[^\\n]*)?\\n"
+                    + "((?:[ \\t]*(?:at |Caused by:|\\.\\.\\. \\d+ (?:more|common frames omitted))[^\\n]*\\n?)+)");
 
     private final Throwable exception;
     private final List<String> exceptionBlocks;

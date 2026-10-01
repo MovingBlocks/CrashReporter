@@ -4,10 +4,13 @@
 package org.terasology.crashreporter.pages;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.ProtocolVersion;
+import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.message.BasicStatusLine;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -15,6 +18,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -56,6 +60,37 @@ class GitHubDeviceLoginTest {
         CloseableHttpClient client = mockClientReturning("error=access_denied&error_description=nope");
 
         assertThrows(IOException.class, () -> GitHubDeviceLogin.requestDeviceCode(client, "client-id"));
+    }
+
+    @Test
+    void requestDeviceCodeReportsAGarbageBodyAsAnIOExceptionNotANullPointer() throws IOException {
+        // A rate-limited endpoint answers with an HTML page; parseFormBody turns it into nonsense
+        // keys with no expires_in, and the old Integer.parseInt(null) killed the login thread.
+        CloseableHttpClient client = mockClientReturning("<html><body>Too many requests</body></html>");
+
+        IOException e = assertThrows(IOException.class, () -> GitHubDeviceLogin.requestDeviceCode(client, "client-id"));
+        assertTrue(e.getMessage().contains("device_code"), e.getMessage());
+    }
+
+    @Test
+    void requestDeviceCodeReportsANonNumericIntervalAsAnIOException() throws IOException {
+        CloseableHttpClient client = mockClientReturning(
+                "device_code=abc&user_code=WDJB-MJHT&verification_uri=https%3A%2F%2Fgithub.com%2Flogin%2Fdevice"
+                        + "&expires_in=soon&interval=5");
+
+        assertThrows(IOException.class, () -> GitHubDeviceLogin.requestDeviceCode(client, "client-id"));
+    }
+
+    @Test
+    void aFailedHttpStatusIsAnIOExceptionEvenWithAFormShapedBody() throws IOException {
+        CloseableHttpResponse response = response("error=server_error");
+        StatusLine status = new BasicStatusLine(new ProtocolVersion("HTTP", 1, 1), 503, "Service Unavailable");
+        when(response.getStatusLine()).thenReturn(status);
+        CloseableHttpClient client = mock(CloseableHttpClient.class);
+        when(client.execute(any(HttpUriRequest.class))).thenReturn(response);
+
+        IOException e = assertThrows(IOException.class, () -> GitHubDeviceLogin.requestDeviceCode(client, "client-id"));
+        assertTrue(e.getMessage().contains("503"), e.getMessage());
     }
 
     @Test
