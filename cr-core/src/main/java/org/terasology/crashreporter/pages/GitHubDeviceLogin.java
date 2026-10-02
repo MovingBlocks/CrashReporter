@@ -86,6 +86,9 @@ public final class GitHubDeviceLogin {
                 continue;
             }
             failOnError(fields);
+            // Neither a token nor an error: not a response this flow defines. Polling on would
+            // leave the user staring at the dialog until the device code expires.
+            throw new IOException("GitHub's token response had neither access_token nor error: " + fields);
         }
         throw new IOException("Device code expired");
     }

@@ -5,6 +5,7 @@ package org.terasology.crashreporter.pages;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -39,10 +40,15 @@ public final class GitHubIssueLinkBuilder {
         return baseUrl + separator + query;
     }
 
+    // A field whose encoded value is at most this many bytes is reserved before any large field is
+    // fitted. Versions, OS, Java and the full-log link are all a line; the exception text is not.
+    private static final int SMALL_FIELD_BYTES = 512;
+
     /**
      * @param template issue form filename under {@code .github/ISSUE_TEMPLATE/}
-     * @param fields field ID to value. Null/empty value: field omitted. Too long: truncated or
-     *         dropped, whichever fits.
+     * @param fields field ID to value, in output order. Null/empty value: field omitted. Small
+     *         fields are reserved first, so an oversized trace earlier in the map cannot crowd out
+     *         the full-log link after it; large fields are then truncated or dropped, whichever fits.
      */
     public static String build(String baseUrl, String template, String title, Map<String, String> fields) {
         if (baseUrl == null) {
@@ -53,19 +59,35 @@ public final class GitHubIssueLinkBuilder {
                 .append("&title=").append(encode(title));
         int budget = URL_BYTE_BUDGET - baseUrl.length() - separator.length() - query.length();
 
+        Map<String, String> reserved = new LinkedHashMap<>();
+        for (Map.Entry<String, String> field : fields.entrySet()) {
+            String value = field.getValue();
+            if (value == null || value.isEmpty()) {
+                continue;
+            }
+            String encoded = encode(value);
+            if (encoded.length() <= SMALL_FIELD_BYTES) {
+                reserved.put(field.getKey(), encoded);
+                budget -= field.getKey().length() + 2 + encoded.length(); // '&' + key + '='
+            }
+        }
+
         for (Map.Entry<String, String> field : fields.entrySet()) {
             String value = field.getValue();
             if (value == null || value.isEmpty()) {
                 continue;
             }
             String key = field.getKey();
-            int overhead = key.length() + 2; // '&' + key + '='
-            String encoded = fitToBudget(value, budget - overhead);
+            String encoded = reserved.get(key);
             if (encoded == null) {
-                continue;
+                int overhead = key.length() + 2;
+                encoded = fitToBudget(value, budget - overhead);
+                if (encoded == null) {
+                    continue;
+                }
+                budget -= overhead + encoded.length();
             }
             query.append('&').append(key).append('=').append(encoded);
-            budget -= overhead + encoded.length();
         }
         return baseUrl + separator + query;
     }

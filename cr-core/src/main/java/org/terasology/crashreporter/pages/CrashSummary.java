@@ -55,11 +55,12 @@ public final class CrashSummary {
     // immediately followed by one or more "at ..."/"Caused by: ..." frame lines - the shape every
     // JVM logging framework prints a Throwable in (Logback's %ex, java.util.logging, a raw
     // printStackTrace()), regardless of which class emits it. "... N more" / "... N common frames
-    // omitted" lines count as frames too: they sit between a cause chain's links, and a pattern that
-    // stopped at them dropped every "Caused by:" after the first - which is the root cause.
+    // omitted" lines count as frames too, as do "Suppressed:" sections: both sit between a cause
+    // chain's links, and a pattern that stopped at them dropped every "Caused by:" after the first -
+    // which is the root cause.
     private static final Pattern STACK_TRACE_HEADER_PATTERN = Pattern.compile(
             "(?m)^([\\w$]+(?:\\.[\\w$]+)+(?:Exception|Error))(:[^\\n]*)?\\n"
-                    + "((?:[ \\t]*(?:at |Caused by:|\\.\\.\\. \\d+ (?:more|common frames omitted))[^\\n]*\\n?)+)");
+                    + "((?:[ \\t]*(?:at |Caused by:|Suppressed:|\\.\\.\\. \\d+ (?:more|common frames omitted))[^\\n]*\\n?)+)");
 
     private final Profile profile;
     private final Throwable exception;
@@ -128,7 +129,10 @@ public final class CrashSummary {
         List<String> blocks = new ArrayList<>();
         blocks.add(formatBlock(primary));
         for (ExceptionEntry entry : found) {
-            if (entry.header.equals(primaryHeader)) {
+            // Skip the one entry chosen as primary, not every entry sharing its header: two distinct
+            // failures can log the same type and message with different traces, and the second
+            // one is exactly what "list every exception" is for. Exact duplicates fall out below.
+            if (entry == primary) {
                 continue;
             }
             String block = formatBlock(entry);
@@ -297,9 +301,15 @@ public final class CrashSummary {
         StringBuilder title = new StringBuilder("Crash: ").append(exception.getClass().getSimpleName());
         String message = exception.getLocalizedMessage();
         if (message != null && !message.trim().isEmpty()) {
-            String trimmed = message.length() > MAX_TITLE_MESSAGE_LENGTH
-                    ? message.substring(0, MAX_TITLE_MESSAGE_LENGTH - 3) + "..."
-                    : message;
+            String trimmed = message;
+            if (message.length() > MAX_TITLE_MESSAGE_LENGTH) {
+                int cut = MAX_TITLE_MESSAGE_LENGTH - 3;
+                // Never split a surrogate pair: a lone high surrogate renders as a mangled character.
+                if (Character.isHighSurrogate(message.charAt(cut - 1))) {
+                    cut--;
+                }
+                trimmed = message.substring(0, cut) + "...";
+            }
             title.append(": ").append(trimmed);
         }
         return title.toString();
@@ -312,6 +322,12 @@ public final class CrashSummary {
      */
     public String buildBody(URL pastebinLink) {
         StringBuilder body = new StringBuilder();
+
+        // The link goes first: when this body is squeezed into a URL, GitHubIssueLinkBuilder
+        // truncates the tail, and the one line that must survive a truncated trace is the pointer
+        // to the full log.
+        body.append("### Full logs\n\n");
+        body.append(pastebinLink != null ? "[PasteBin](" + pastebinLink + ")\n\n" : "(not uploaded)\n\n");
 
         body.append("### Exceptions\n\n");
         for (String block : exceptionBlocks) {
@@ -347,9 +363,6 @@ public final class CrashSummary {
                 }
             }
         }
-
-        body.append("\n### Full logs\n\n");
-        body.append(pastebinLink != null ? "[PasteBin](" + pastebinLink + ")\n" : "(not uploaded)\n");
 
         return body.toString();
     }
@@ -470,7 +483,14 @@ public final class CrashSummary {
                 return null;
             }
             try {
-                return Pattern.compile(regex);
+                Pattern pattern = Pattern.compile(regex);
+                // firstGroup/extractActiveModules read group(1); a regex without one compiles fine
+                // and then throws IndexOutOfBoundsException on the first match.
+                if (pattern.matcher("").groupCount() < 1) {
+                    System.err.println("Ignoring " + key + " regex without a capture group: " + regex);
+                    return null;
+                }
+                return pattern;
             } catch (PatternSyntaxException e) {
                 System.err.println("Ignoring invalid " + key + " regex: " + e.getMessage());
                 return null;

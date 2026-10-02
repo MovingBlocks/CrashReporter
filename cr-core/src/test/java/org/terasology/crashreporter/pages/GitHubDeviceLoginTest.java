@@ -116,6 +116,15 @@ class GitHubDeviceLoginTest {
     }
 
     @Test
+    void pollForAccessTokenStopsOnAResponseWithNeitherTokenNorError() throws IOException {
+        // Not a response the device flow defines. Polling on would hold the dialog until expiry.
+        CloseableHttpClient client = mockClientReturning("token_type=bearer");
+
+        assertThrows(IOException.class,
+                () -> GitHubDeviceLogin.pollForAccessToken(client, "client-id", fastDeviceCode()));
+    }
+
+    @Test
     void pollForAccessTokenThrowsOnAccessDenied() throws IOException {
         CloseableHttpClient client = mockClientReturning("error=access_denied&error_description=User denied access");
 
