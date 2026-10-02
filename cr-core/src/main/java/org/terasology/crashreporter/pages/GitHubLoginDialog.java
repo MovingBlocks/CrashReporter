@@ -45,10 +45,13 @@ public class GitHubLoginDialog extends JDialog {
 
     private volatile String accessToken;
     private volatile Thread loginThread;
+    private volatile Thread submitThread;
 
     public GitHubLoginDialog(Window ownerWindow, String clientId, String owner, String repo,
                               String title, String body) {
         super(ownerWindow, I18N.getMessage("githubLoginTitle"), ModalityType.APPLICATION_MODAL);
+        // The window-manager close button must run dispose() too; JDialog's default only hides.
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         this.clientId = clientId;
         this.owner = owner;
         this.repo = repo;
@@ -127,7 +130,7 @@ public class GitHubLoginDialog extends JDialog {
             } catch (IOException | RuntimeException e) {
                 // RuntimeException too: a rate-limited or erroring endpoint used to surface as an
                 // uncaught exception that killed this thread and left the dialog on "Requesting...".
-                SwingUtilities.invokeLater(() -> showFailure(e));
+                SwingUtilities.invokeLater(() -> showFailure("githubLoginFailed", e));
             }
         }, "GitHubDeviceLogin");
         thread.setDaemon(true);
@@ -136,17 +139,23 @@ public class GitHubLoginDialog extends JDialog {
     }
 
     /**
-     * Cancel stops the device-flow poll. Without this the daemon thread kept asking GitHub for a
-     * token until the code expired (typically fifteen minutes), and a user who finished the browser
-     * step after cancelling minted a live token into a dialog nobody could see.
+     * Cancel stops the device-flow poll and abandons an in-flight submission. Without this the
+     * daemon thread kept asking GitHub for a token until the code expired (typically fifteen
+     * minutes), and a user who finished the browser step after cancelling minted a live token into
+     * a dialog nobody could see. An interrupted POST may still reach GitHub, which is why the
+     * success and failure callbacks also check that the dialog is still displayable before acting.
      */
     @Override
     public void dispose() {
-        Thread thread = loginThread;
+        interrupt(loginThread);
+        interrupt(submitThread);
+        super.dispose();
+    }
+
+    private static void interrupt(Thread thread) {
         if (thread != null) {
             thread.interrupt();
         }
-        super.dispose();
     }
 
     private void showCode(GitHubDeviceLogin.DeviceCode code) {
@@ -165,22 +174,32 @@ public class GitHubLoginDialog extends JDialog {
                 URL issueUrl = GitHubIssueApiClient.createIssue(client, accessToken, owner, repo, title, body);
                 SwingUtilities.invokeLater(() -> showSuccess(issueUrl));
             } catch (IOException | RuntimeException e) {
-                SwingUtilities.invokeLater(() -> showFailure(e));
+                SwingUtilities.invokeLater(() -> showFailure("githubSubmitFailed", e));
             }
         }, "GitHubIssueSubmit");
         thread.setDaemon(true);
+        submitThread = thread;
         thread.start();
     }
 
     private void showSuccess(URL issueUrl) {
+        if (!isDisplayable()) {
+            // Cancelled while submitting, but the POST had already gone out. Don't pop a browser
+            // from a dialog the user closed; the issue exists under their account regardless.
+            System.err.println("Issue created after the dialog was closed: " + issueUrl);
+            return;
+        }
         resultLabel.setText("<html>" + I18N.getMessage("githubLoginSuccess", issueUrl) + "</html>");
         cards.show(content, "result");
         BrowserLauncher.open(issueUrl.toString());
     }
 
-    private void showFailure(Exception e) {
+    private void showFailure(String messageKey, Exception e) {
         e.printStackTrace(System.err);
-        resultLabel.setText("<html>" + I18N.getMessage("githubLoginFailed", e.getLocalizedMessage()) + "</html>");
+        if (!isDisplayable()) {
+            return;
+        }
+        resultLabel.setText("<html>" + I18N.getMessage(messageKey, e.getLocalizedMessage()) + "</html>");
         cards.show(content, "result");
     }
 }

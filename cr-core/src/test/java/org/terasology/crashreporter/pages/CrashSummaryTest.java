@@ -248,6 +248,75 @@ class CrashSummaryTest {
     }
 
     @Test
+    void bodyKeepsTheRootCauseAfterASuppressedSection() {
+        String combinedLog = "=== Terasology-game.log ===\n"
+                + "java.lang.IllegalStateException: wrapper\n"
+                + "\tat org.terasology.engine.core.TerasologyEngine.run(TerasologyEngine.java:200)\n"
+                + "\tSuppressed: java.io.IOException: close failed\n"
+                + "\t\tat java.base/java.io.FileOutputStream.close(FileOutputStream.java:300)\n"
+                + "Caused by: java.io.IOException: disk full\n"
+                + "\tat java.base/java.io.FileOutputStream.write(FileOutputStream.java:100)\n";
+
+        String body = CrashSummary.extract(new RuntimeException("boom"), combinedLog, terasology()).buildBody(null);
+
+        assertTrue(body.contains("Suppressed: java.io.IOException: close failed"), body);
+        assertTrue(body.contains("Caused by: java.io.IOException: disk full"), body);
+    }
+
+    @Test
+    void bodyListsTwoDistinctFailuresThatShareAHeader() {
+        RuntimeException primary = new RuntimeException("boom");
+        // Same type and message, different traces: the second is a separate failure, not a duplicate.
+        String combinedLog = "=== Terasology-game.log ===\n"
+                + primary + "\n"
+                + "\tat org.terasology.engine.core.TerasologyEngine.run(TerasologyEngine.java:200)\n"
+                + "later...\n"
+                + primary + "\n"
+                + "\tat org.terasology.engine.world.WorldRenderer.render(WorldRenderer.java:50)\n";
+
+        String body = CrashSummary.extract(primary, combinedLog, terasology()).buildBody(null);
+
+        assertTrue(body.contains("TerasologyEngine.run"), body);
+        assertTrue(body.contains("WorldRenderer.render"), "Expected the second same-header failure listed too, got: " + body);
+    }
+
+    @Test
+    void bodyPutsTheFullLogLinkBeforeTheExceptions() throws MalformedURLException {
+        String body = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT, terasology())
+                .buildBody(new URL("https://pastebin.com/abc123"));
+
+        // A URL-squeezed body is truncated at the tail, so the link must come first to survive.
+        assertTrue(body.indexOf("https://pastebin.com/abc123") < body.indexOf("### Exceptions"), body);
+    }
+
+    @Test
+    void titleTruncationDoesNotSplitASurrogatePair() {
+        String emoji = new String(Character.toChars(0x1F600));
+        // 76 ASCII chars put the emoji's two chars at indices 76-77, exactly where the cut lands.
+        StringBuilder message = new StringBuilder();
+        for (int i = 0; i < 76; i++) {
+            message.append('a');
+        }
+        message.append(emoji).append(" and much more text after it");
+
+        String title = CrashSummary.extract(new RuntimeException(message.toString()), LOG_TEXT, terasology()).buildTitle();
+
+        assertFalse(title.contains("\uD83D..."), "Expected no lone high surrogate before the ellipsis: " + title);
+        assertTrue(title.endsWith("..."), title);
+    }
+
+    @Test
+    void aConfiguredRegexWithoutACaptureGroupDegradesToNotExtracted() {
+        CrashSummary.Profile noGroup = new CrashSummary.Profile("X", "engineVersion=\\S+", null, "Activating module: \\S+",
+                new EnumMap<>(CrashSummary.Profile.FormField.class));
+
+        String body = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT, noGroup).buildBody(null);
+
+        assertFalse(body.contains("version:"), body);
+        assertFalse(body.contains("Active modules"), body);
+    }
+
+    @Test
     void bodyFallsBackToTheExceptionsOwnTraceWhenNotFoundInAnyTab() {
         RuntimeException primary = new RuntimeException("boom");
         CrashSummary summary = CrashSummary.extract(primary, LOG_TEXT);
