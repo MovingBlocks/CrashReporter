@@ -19,8 +19,9 @@ public final class GlobalProperties {
         JOIN_DISCORD_LINK,
         REPORT_ISSUE_LINK,
         REPORT_ISSUE_TEMPLATE,
-        // GitHub OAuth App client ID with Device Flow enabled. Unset by default - see
-        // GitHubDeviceLogin's javadoc. When unset, the "submit directly" button is hidden.
+        // Client ID of a GitHub App (not an OAuth App) with Device Flow enabled and Issues write
+        // permission. Unset by default - see GitHubDeviceLogin's javadoc for why a GitHub App.
+        // When unset, the "submit directly" button is hidden.
         REPORT_ISSUE_OAUTH_CLIENT_ID,
         // Field IDs of the issue form named by REPORT_ISSUE_TEMPLATE, one per thing CrashSummary
         // can pre-fill. Unset means that field is left for the user. Form-specific, so these live

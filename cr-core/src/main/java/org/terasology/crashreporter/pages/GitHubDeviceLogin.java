@@ -23,22 +23,28 @@ import java.util.Map;
 
 /**
  * GitHub's OAuth Device Flow - no client secret, no redirect URI, made for apps like this one.
- * Needs an OAuth App registered at github.com/settings/developers with Device Flow enabled;
- * its client ID goes in {@link org.terasology.crashreporter.GlobalProperties.KEY#REPORT_ISSUE_OAUTH_CLIENT_ID}.
+ * Needs a <em>GitHub App</em> with Device Flow enabled, the "Issues: read and write" repository
+ * permission, and an installation on the repository that receives the reports; its client ID goes
+ * in {@link org.terasology.crashreporter.GlobalProperties.KEY#REPORT_ISSUE_OAUTH_CLIENT_ID}.
+ * <p>
+ * A GitHub App rather than an OAuth App on purpose. The token a user grants is limited to what
+ * the app may do, on the repositories it is installed on, and to what that user could already do
+ * there - for a player with no role on the repo, opening an issue. An OAuth App has no scope
+ * narrower than {@code public_repo}, which is write access to every public repository the user
+ * owns. GitHub Apps ignore the {@code scope} parameter, so none is sent.
+ * <p>
  * Endpoints reply form-urlencoded by default, so no JSON parsing needed here.
  */
 public final class GitHubDeviceLogin {
 
     private static final String DEVICE_CODE_URL = "https://github.com/login/device/code";
     private static final String TOKEN_URL = "https://github.com/login/oauth/access_token";
-    private static final String SCOPE = "public_repo";
 
     private GitHubDeviceLogin() {
     }
 
     public static DeviceCode requestDeviceCode(CloseableHttpClient client, String clientId) throws IOException {
-        Map<String, String> fields = post(client, DEVICE_CODE_URL,
-                param("client_id", clientId), param("scope", SCOPE));
+        Map<String, String> fields = post(client, DEVICE_CODE_URL, param("client_id", clientId));
         failOnError(fields);
         return new DeviceCode(required(fields, "device_code"), required(fields, "user_code"),
                 required(fields, "verification_uri"), requiredInt(fields, "expires_in"), requiredInt(fields, "interval"));
