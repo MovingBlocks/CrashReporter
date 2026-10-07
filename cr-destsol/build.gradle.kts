@@ -18,15 +18,6 @@ repositories {
             excludeGroupByRegex("org.terasology(..+)?")
         }
     }
-    // JBoss Maven Repository requried to fetch `org.jpastebin` dependency for CrashReporter
-    // https://developer.jboss.org/docs/DOC-11377
-    maven {
-        name = "JBoss Public Maven Repository Group"
-        url = uri("https://repository.jboss.org/nexus/content/repositories/public/")
-        content {
-            includeModule("org", "jpastebin")
-        }
-    }
     maven {
         name = "Terasology Artifactory"
         url = uri("https://artifactory.terasology.io/artifactory/virtual-repo-live")
