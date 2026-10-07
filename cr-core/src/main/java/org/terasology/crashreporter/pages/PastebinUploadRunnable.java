@@ -35,7 +35,7 @@ public class PastebinUploadRunnable implements Callable<URL> {
 
     static final String PASTEBIN_API_URL = "https://pastebin.com/api/api_post.php";
     static final int TIMEOUT_MILLIS = 30_000;
-    private static final long WATCHDOG_POLL_MILLIS = 50;
+    private static final long INTERRUPT_POLL_MILLIS = 250;
 
     /**
      * Username Terasology
@@ -79,7 +79,6 @@ public class PastebinUploadRunnable implements Callable<URL> {
         // the watchdog aborts it at an overall deadline, or as soon as this thread is interrupted
         // (UploadPanel cancels its Future on timeout) - blocking socket I/O ignores interrupts itself.
         final Thread owner = Thread.currentThread();
-        final long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
         final AtomicBoolean timedOut = new AtomicBoolean();
         final ScheduledExecutorService watchdog = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
             @Override
@@ -89,16 +88,21 @@ public class PastebinUploadRunnable implements Callable<URL> {
                 return thread;
             }
         });
+        watchdog.schedule(new Runnable() {
+            @Override
+            public void run() {
+                timedOut.set(true);
+                post.abort();
+            }
+        }, timeoutMillis, TimeUnit.MILLISECONDS);
         watchdog.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
-                boolean expired = System.nanoTime() - deadline >= 0;
-                if (expired || owner.isInterrupted()) {
-                    timedOut.set(expired);
+                if (owner.isInterrupted()) {
                     post.abort();
                 }
             }
-        }, WATCHDOG_POLL_MILLIS, WATCHDOG_POLL_MILLIS, TimeUnit.MILLISECONDS);
+        }, INTERRUPT_POLL_MILLIS, INTERRUPT_POLL_MILLIS, TimeUnit.MILLISECONDS);
 
         try (CloseableHttpClient client = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
                 CloseableHttpResponse response = client.execute(post)) {
