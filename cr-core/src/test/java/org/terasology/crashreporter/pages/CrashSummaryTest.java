@@ -343,6 +343,14 @@ class CrashSummaryTest {
     }
 
     @Test
+    void bodyAndFormDetailsStartWithTheCrashReporterDisclaimer() {
+        CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), LOG_TEXT, terasology());
+
+        assertTrue(summary.buildBody(null).startsWith(CrashSummary.DISCLAIMER), summary.buildBody(null));
+        assertTrue(summary.buildIssueFormFields(null).get("actual_behavior").startsWith(CrashSummary.DISCLAIMER));
+    }
+
+    @Test
     void issueFormFieldsOmitVersionWhenNotFoundInsteadOfSayingUnknown() {
         CrashSummary summary = CrashSummary.extract(new RuntimeException("boom"), "no relevant lines here", terasology());
         Map<String, String> fields = summary.buildIssueFormFields(null);

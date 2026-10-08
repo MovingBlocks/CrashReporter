@@ -142,10 +142,8 @@ public class UploadPanel extends JPanel {
 
     /**
      * Runs {@code callable} on its own thread and waits up to {@link #uploadTimeoutSeconds} for it
-     * to finish - {@code PastebinUploadRunnable} makes a real HTTP call with no timeout of its own,
-     * so without one here a slow or unreachable server leaves the button disabled and the status
-     * label reading "please wait" forever, with no way for the user to tell the difference between
-     * "still working" and "will never finish".
+     * to finish, so a slow or unreachable server can't leave the button disabled and the status
+     * label reading "please wait" forever.
      */
     private void upload(final Callable<URL> callable) {
         final ExecutorService executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
